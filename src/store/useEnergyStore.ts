@@ -37,6 +37,7 @@ const DEFAULT_CONNECTION: DeviceConnection = {
   lastSyncTime: null,
   errorMessage: null,
   rssi: -62,
+  geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
 };
 
 const INITIAL_READING: PZEMReading = {

@@ -20,6 +20,7 @@ export interface OcrRequestOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 14000;
+const DEFAULT_GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 
 /**
  * Procesa la imagen del medidor usando Google Gemini 1.5 Flash (Gratis)
@@ -31,18 +32,22 @@ export async function processMeterImage(
   options?: OcrRequestOptions
 ): Promise<OcrScanResult> {
   const startTime = Date.now();
+  const activeKey = options?.geminiApiKey?.trim() || DEFAULT_GEMINI_KEY;
 
   // 1. INTENTO CON GOOGLE GEMINI 1.5 FLASH (GRATUITO)
-  if (options?.geminiApiKey && options?.base64Image) {
+  if (activeKey && options?.base64Image) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), options?.timeoutMs || DEFAULT_TIMEOUT_MS);
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${options.geminiApiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
 
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': activeKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -73,7 +78,8 @@ export async function processMeterImage(
         const json = await res.json();
         const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
-          const parsed = JSON.parse(rawText);
+          const cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanText);
           if (typeof parsed.kwh === 'number' && parsed.kwh > 0) {
             return {
               detectedKWh: Number(parsed.kwh.toFixed(2)),
