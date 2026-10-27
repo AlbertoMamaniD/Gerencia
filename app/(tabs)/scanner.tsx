@@ -45,7 +45,7 @@ export default function ScannerScreen() {
     setScanResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     try {
-      const result = await processMeterImage(uri, currentEnergy, { base64Image: base64, geminiApiKey: connection.geminiApiKey });
+      const result = await processMeterImage(uri, currentEnergy, { base64Image: base64 });
       setScanResult(result);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (err) {
@@ -75,17 +75,13 @@ export default function ScannerScreen() {
     let finalUri = selectedImage || '';
 
     if (selectedImage) {
-      const upload = await uploadMeterScanToSupabase(
-        selectedImage,
-        {
-          detectedKWh: scanResult.detectedKWh,
-          hardwareKWh: currentEnergy,
-          differenceKWh: diffKWh,
-          meterSerial: scanResult.meterSerial,
-          confidence: scanResult.confidence,
-        },
-        { url: connection.supabaseUrl, anonKey: connection.supabaseAnonKey }
-      );
+      const upload = await uploadMeterScanToSupabase(selectedImage, {
+        detectedKWh: scanResult.detectedKWh,
+        hardwareKWh: currentEnergy,
+        differenceKWh: diffKWh,
+        meterSerial: scanResult.meterSerial,
+        confidence: scanResult.confidence,
+      });
       if (upload.success && upload.photoUrl) finalUri = upload.photoUrl;
     }
 

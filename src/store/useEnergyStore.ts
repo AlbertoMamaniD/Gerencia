@@ -38,8 +38,8 @@ const DEFAULT_CONNECTION: DeviceConnection = {
   errorMessage: null,
   rssi: -62,
   geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
-  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://hchigziyarizebvcqwub.supabase.co',
-  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_6ZqtKkD9sVigU0jOLit1hg_7WMMhQxi',
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
 };
 
 const INITIAL_READING: PZEMReading = {
@@ -226,8 +226,15 @@ export const useEnergyStore = create<EnergyStoreState>()(
       },
     }),
     {
-      name: 'ahorratech-storage-v1',
+      name: 'ahorratech-storage-v2',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.connection.geminiApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+          state.connection.supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+          state.connection.supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+        }
+      },
       partialize: (state) => ({
         budgetConfig: state.budgetConfig,
         connection: {
@@ -238,9 +245,6 @@ export const useEnergyStore = create<EnergyStoreState>()(
           isPolling: false,
           lastSyncTime: state.connection.lastSyncTime,
           errorMessage: null,
-          geminiApiKey: state.connection.geminiApiKey || '',
-          supabaseUrl: state.connection.supabaseUrl || '',
-          supabaseAnonKey: state.connection.supabaseAnonKey || '',
         },
         dailyHistory: state.dailyHistory,
         cycleStartTimestamp: state.cycleStartTimestamp,
