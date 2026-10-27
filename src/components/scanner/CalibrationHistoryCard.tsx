@@ -1,6 +1,7 @@
 /**
  * AhorraTech - Calibration History Card
  * Componente modular para el historial de calibraciones ópticas en la nube.
+ * Blindado contra valores nulos o indefinidos.
  */
 
 import React from 'react';
@@ -12,17 +13,19 @@ import { scannerStyles } from '../../styles/scanner.styles';
 import { colors } from '../../theme/colors';
 
 interface CalibrationHistoryCardProps {
-  captures: MeterCaptureRecord[];
+  captures?: MeterCaptureRecord[];
 }
 
-export function CalibrationHistoryCard({ captures }: CalibrationHistoryCardProps) {
+export function CalibrationHistoryCard({ captures = [] }: CalibrationHistoryCardProps) {
+  const safeList = Array.isArray(captures) ? captures : [];
+
   return (
     <View style={scannerStyles.panelCard}>
       <Text style={scannerStyles.sectionTitle}>HISTORIAL DE CALIBRACIONES EN NUBE</Text>
-      {captures.length === 0 ? (
+      {safeList.length === 0 ? (
         <Text style={scannerStyles.emptyHistoryText}>Aún no hay calibraciones registradas con foto.</Text>
       ) : (
-        captures.slice(0, 5).map((item) => (
+        safeList.slice(0, 5).map((item) => (
           <View key={item.id} style={scannerStyles.historyItem}>
             <View style={scannerStyles.historyLeft}>
               <View style={scannerStyles.historyIconWrap}>

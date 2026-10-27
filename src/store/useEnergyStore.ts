@@ -238,10 +238,13 @@ export const useEnergyStore = create<EnergyStoreState>()(
           isPolling: false,
           lastSyncTime: state.connection.lastSyncTime,
           errorMessage: null,
+          geminiApiKey: state.connection.geminiApiKey || '',
+          supabaseUrl: state.connection.supabaseUrl || '',
+          supabaseAnonKey: state.connection.supabaseAnonKey || '',
         },
         dailyHistory: state.dailyHistory,
         cycleStartTimestamp: state.cycleStartTimestamp,
-        meterCaptures: state.meterCaptures,
+        meterCaptures: state.meterCaptures || [],
       }),
     }
   )

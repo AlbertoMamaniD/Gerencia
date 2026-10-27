@@ -172,7 +172,7 @@ export default function ScannerScreen() {
         </View>
       </View>
 
-      <CalibrationHistoryCard captures={meterCaptures} />
+      <CalibrationHistoryCard captures={meterCaptures || []} />
       <View style={scannerStyles.bottomSpacer} />
     </ScreenWrapper>
   );
