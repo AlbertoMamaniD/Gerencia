@@ -28,6 +28,7 @@ export default function SettingsScreen() {
   const { sendTestNotification } = useNotifications();
 
   const [ipAddress, setIpAddress] = useState(connection.ipAddress);
+  const [geminiApiKey, setGeminiApiKey] = useState(connection.geminiApiKey || '');
   const [ratePerKWh, setRatePerKWh] = useState(String(budgetConfig.ratePerKWh));
   const [cycleStartDay, setCycleStartDay] = useState(String(budgetConfig.billingCycleStartDay));
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function SettingsScreen() {
   const handleSaveNetwork = () => {
     const numRate = parseFloat(ratePerKWh) || budgetConfig.ratePerKWh;
     const numDay = parseInt(cycleStartDay, 10) || budgetConfig.billingCycleStartDay;
-    updateConnection({ ipAddress: ipAddress.trim() });
+    updateConnection({ ipAddress: ipAddress.trim(), geminiApiKey: geminiApiKey.trim() });
     updateBudgetConfig({ ratePerKWh: numRate, billingCycleStartDay: Math.min(28, Math.max(1, numDay)) });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setStatusMsg('Configuración técnica guardada');
@@ -85,6 +86,14 @@ export default function SettingsScreen() {
           value={ipAddress}
           onChangeText={setIpAddress}
           helperText="Ruta REST: /api/telemetry (Polling cada 2000 ms)"
+        />
+        <Input
+          label="Google Gemini Vision API Key (Gratis)"
+          placeholder="AIzaSy..."
+          secureTextEntry
+          value={geminiApiKey}
+          onChangeText={setGeminiApiKey}
+          helperText="Clave gratuita de aistudio.google.com para escaneo con IA"
         />
         <View style={settingsStyles.hardwareInfoRow}>
           <Text style={settingsStyles.infoLabel}>Última Sincronización:</Text>

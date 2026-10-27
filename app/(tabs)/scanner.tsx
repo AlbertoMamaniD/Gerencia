@@ -23,9 +23,8 @@ import { colors } from '../../src/theme/colors';
 export default function ScannerScreen() {
   const ratePerKWh = useEnergyStore((s) => s.budgetConfig.ratePerKWh);
   const currentEnergy = useEnergyStore((s) => s.liveReading.energy);
-  const meterCaptures = useEnergyStore((s) => s.meterCaptures);
-  const addMeterCapture = useEnergyStore((s) => s.addMeterCapture);
-  const calibrateEnergyFromMeter = useEnergyStore((s) => s.calibrateEnergyFromMeter);
+  const { meterCaptures, addMeterCapture, calibrateEnergyFromMeter } = useEnergyStore();
+  const geminiApiKey = useEnergyStore((s) => s.connection.geminiApiKey);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -39,13 +38,13 @@ export default function ScannerScreen() {
   }, [isScanning]);
   const laserStyle = useAnimatedStyle(() => ({ transform: [{ translateY: laserY.value }] }));
 
-  const runOcrAnalysis = async (uri: string) => {
+  const runOcrAnalysis = async (uri: string, base64?: string) => {
     setSelectedImage(uri);
     setIsScanning(true);
     setScanResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     try {
-      const result = await processMeterImage(uri, currentEnergy);
+      const result = await processMeterImage(uri, currentEnergy, { base64Image: base64, geminiApiKey });
       setScanResult(result);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch {
@@ -58,13 +57,13 @@ export default function ScannerScreen() {
   const handleTakePhoto = async () => {
     const { granted } = await ImagePicker.requestCameraPermissionsAsync();
     if (!granted) return Alert.alert('Permiso', 'Se necesita acceso a la cámara para escanear.');
-    const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85, aspect: [4, 3] });
-    if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri);
+    const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8, base64: true, aspect: [4, 3] });
+    if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri, res.assets[0].base64 || undefined);
   };
 
   const handlePickGallery = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.85 });
-    if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri);
+    const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8, base64: true });
+    if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri, res.assets[0].base64 || undefined);
   };
 
   const handleSyncData = () => {

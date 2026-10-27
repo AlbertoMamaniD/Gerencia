@@ -33,6 +33,7 @@ export interface DeviceConnection {
   lastSyncTime: number | null;
   errorMessage: string | null;
   rssi?: number;                  // Nivel de señal WiFi en dBm (opcional de ESP32)
+  geminiApiKey?: string;          // Clave de API gratuita de Google Gemini AI Studio
 }
 
 export interface LivePowerPoint {
