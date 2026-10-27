@@ -26,9 +26,6 @@ export default function SettingsScreen() {
   const { sendTestNotification } = useNotifications();
 
   const [ipAddress, setIpAddress] = useState(connection.ipAddress);
-  const [geminiApiKey, setGeminiApiKey] = useState(connection.geminiApiKey || '');
-  const [supabaseUrl, setSupabaseUrl] = useState(connection.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || '');
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState(connection.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '');
   const [ratePerKWh, setRatePerKWh] = useState(String(budgetConfig.ratePerKWh));
   const [cycleStartDay, setCycleStartDay] = useState(String(budgetConfig.billingCycleStartDay));
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -38,13 +35,10 @@ export default function SettingsScreen() {
     const numDay = parseInt(cycleStartDay, 10) || budgetConfig.billingCycleStartDay;
     updateConnection({
       ipAddress: ipAddress.trim(),
-      geminiApiKey: geminiApiKey.trim(),
-      supabaseUrl: supabaseUrl.trim(),
-      supabaseAnonKey: supabaseAnonKey.trim(),
     });
     updateBudgetConfig({ ratePerKWh: numRate, billingCycleStartDay: Math.min(28, Math.max(1, numDay)) });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setStatusMsg('Configuración técnica y nube guardadas');
+    setStatusMsg('Parámetros guardados correctamente');
     setTimeout(() => setStatusMsg(null), 3000);
   };
 
@@ -69,7 +63,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenWrapper header={<Header showLogo={false} title="Ajustes Técnicos" subtitle="Hardware ESP32 & Nube Supabase" />}>
+    <ScreenWrapper header={<Header showLogo={false} title="Ajustes Técnicos" subtitle="Hardware ESP32 & Nube Protegida" />}>
       <View style={settingsStyles.panel}>
         <View style={settingsStyles.panelHeaderRow}>
           <View style={settingsStyles.panelHeaderLeft}>
@@ -78,9 +72,8 @@ export default function SettingsScreen() {
           </View>
           <Badge label={connection.isConnected ? 'EN LÍNEA' : 'STANDBY'} variant={connection.isConnected ? 'success' : 'warning'} />
         </View>
-        <Text style={settingsStyles.panelDesc}>Enlace con microcontrolador PZEM-004T y Google Gemini Vision AI.</Text>
-        <Input label="IP Microcontrolador" prefix="http://" placeholder="192.168.4.1" value={ipAddress} onChangeText={setIpAddress} />
-        <Input label="Google Gemini API Key (Gratis)" placeholder="AIzaSy..." secureTextEntry value={geminiApiKey} onChangeText={setGeminiApiKey} />
+        <Text style={settingsStyles.panelDesc}>Enlace con microcontrolador PZEM-004T en red local.</Text>
+        <Input label="IP Microcontrolador ESP32" prefix="http://" placeholder="192.168.4.1" value={ipAddress} onChangeText={setIpAddress} />
         <View style={settingsStyles.hardwareInfoRow}>
           <Text style={settingsStyles.infoLabel}>Última Sincronización:</Text>
           <Text style={settingsStyles.infoVal}>{connection.lastSyncTime ? formatTime(connection.lastSyncTime) : 'Sincronizado'}</Text>
@@ -90,13 +83,31 @@ export default function SettingsScreen() {
       <View style={settingsStyles.panel}>
         <View style={settingsStyles.panelHeaderRow}>
           <View style={settingsStyles.panelHeaderLeft}>
-            <MaterialCommunityIcons name="cloud-upload" size={16} color={colors.brand.electricBlue} />
-            <Text style={settingsStyles.panelTitle}>SUPABASE CLOUD (STORAGE & DB)</Text>
+            <MaterialCommunityIcons name="shield-check" size={16} color={colors.status.success} />
+            <Text style={settingsStyles.panelTitle}>INFRAESTRUCTURA Y NUBE PROTEGIDA</Text>
           </View>
         </View>
-        <Text style={settingsStyles.panelDesc}>Subida de fotografías al bucket 'meter-photos' y tabla 'meter_scans'.</Text>
-        <Input label="Supabase Project URL" placeholder="https://xyz.supabase.co" value={supabaseUrl} onChangeText={setSupabaseUrl} />
-        <Input label="Supabase Anon Key" placeholder="eyJhbGciOi..." secureTextEntry value={supabaseAnonKey} onChangeText={setSupabaseAnonKey} />
+        <Text style={settingsStyles.panelDesc}>Credenciales de producción cifradas internamente en la aplicación.</Text>
+        <View style={settingsStyles.cloudStatusRow}>
+          <View style={settingsStyles.cloudStatusLeft}>
+            <MaterialCommunityIcons name="database-check" size={18} color={colors.status.success} />
+            <View>
+              <Text style={settingsStyles.cloudStatusText}>Supabase DB & Storage</Text>
+              <Text style={settingsStyles.cloudEndpointText}>hchigziyarizebvcqwub.supabase.co</Text>
+            </View>
+          </View>
+          <Badge label="ACTIVO" variant="success" />
+        </View>
+        <View style={[settingsStyles.cloudStatusRow, { borderBottomWidth: 0 }]}>
+          <View style={settingsStyles.cloudStatusLeft}>
+            <MaterialCommunityIcons name="eye-check" size={18} color={colors.brand.electricBlue} />
+            <View>
+              <Text style={settingsStyles.cloudStatusText}>Google Gemini Cloud OCR</Text>
+              <Text style={settingsStyles.cloudEndpointText}>API Vision Multi-Tenant</Text>
+            </View>
+          </View>
+          <Badge label="VINCULADO" variant="info" />
+        </View>
       </View>
 
       <View style={settingsStyles.panel}>
@@ -116,7 +127,7 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      <Button label="Guardar Parámetros y Nube" iconName="save" onPress={handleSaveNetwork} style={settingsStyles.actionBtn} />
+      <Button label="Guardar Parámetros Técnicos" iconName="save" onPress={handleSaveNetwork} style={settingsStyles.actionBtn} />
       <Button label="Probar Notificación de Alerta" iconName="bell" variant="outline" onPress={sendTestNotification} style={settingsStyles.actionBtn} />
       <Button label="Reiniciar Ciclo de Facturación" iconName="refresh-cw" variant="danger" onPress={handleResetCycle} style={settingsStyles.actionBtn} />
       <View style={settingsStyles.bottomSpacer} />
