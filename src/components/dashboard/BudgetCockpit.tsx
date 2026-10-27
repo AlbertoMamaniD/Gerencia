@@ -184,7 +184,7 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
       <TouchableOpacity
         style={dashboardStyles.scannerDockButton}
         onPress={onOpenScanner}
-        activeOpacity={0.8}
+        activeOpacity={0.88}
         accessibilityLabel="Escanear Medidor con Foto"
       >
         <View style={dashboardStyles.scannerDockLeft}>

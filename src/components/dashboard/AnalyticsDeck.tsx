@@ -65,7 +65,7 @@ export const AnalyticsDeck: React.FC<AnalyticsDeckProps> = ({
               activeTab === 'live' && dashboardStyles.tabSwitchBtnActive,
             ]}
             onPress={() => handleTabChange('live')}
-            activeOpacity={0.7}
+            activeOpacity={0.88}
           >
             <Text
               style={[
@@ -83,7 +83,7 @@ export const AnalyticsDeck: React.FC<AnalyticsDeckProps> = ({
               activeTab === 'weekly' && dashboardStyles.tabSwitchBtnActive,
             ]}
             onPress={() => handleTabChange('weekly')}
-            activeOpacity={0.7}
+            activeOpacity={0.88}
           >
             <Text
               style={[

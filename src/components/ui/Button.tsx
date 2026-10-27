@@ -99,7 +99,7 @@ export const Button: React.FC<ButtonProps> = ({
       ]}
       onPress={handlePress}
       disabled={disabled || loading}
-      activeOpacity={0.75}
+      activeOpacity={0.88}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading }}
     >

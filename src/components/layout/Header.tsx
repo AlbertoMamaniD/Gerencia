@@ -88,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
           <TouchableOpacity
             style={headerStyles.scannerButton}
             onPress={onOpenScanner}
-            activeOpacity={0.7}
+            activeOpacity={0.88}
             accessibilityLabel="Escanear Medidor Eléctrico"
           >
             <MaterialCommunityIcons name="camera-metering-center" size={16} color={colors.brand.electricBlue} />
@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
           <TouchableOpacity
             style={headerStyles.actionButton}
             onPress={rightAction.onPress}
-            activeOpacity={0.7}
+            activeOpacity={0.88}
             accessibilityLabel={rightAction.accessibilityLabel || 'Acción'}
           >
             <Feather name={rightAction.iconName} size={18} color={colors.text.secondary} />

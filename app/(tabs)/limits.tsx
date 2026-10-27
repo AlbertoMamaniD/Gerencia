@@ -70,6 +70,7 @@ export default function LimitsScreen() {
               <TouchableOpacity
                 key={val}
                 style={[limitsStyles.presetBtn, isMatch && limitsStyles.presetBtnActive]}
+                activeOpacity={0.85}
                 onPress={() => {
                   Haptics.selectionAsync().catch(() => {});
                   setMonthlyBudgetBs(String(val));
@@ -114,6 +115,7 @@ export default function LimitsScreen() {
               <TouchableOpacity
                 key={pct}
                 style={[limitsStyles.thresholdBtn, isSelected && limitsStyles.thresholdBtnActive]}
+                activeOpacity={0.85}
                 onPress={() => {
                   Haptics.selectionAsync().catch(() => {});
                   setWarningThresholdPct(pct);
