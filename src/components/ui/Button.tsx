@@ -79,7 +79,7 @@ export const Button: React.FC<ButtonProps> = ({
     if (disabled) return colors.text.muted;
     switch (variant) {
       case 'outline':
-        return colors.brand.telemetryCyan;
+        return colors.brand.electricBlue;
       case 'secondary':
         return colors.text.secondary;
       default:

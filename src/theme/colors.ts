@@ -1,64 +1,65 @@
 /**
- * AhorraTech - Smart Grid FinTech Design Tokens
- * Paleta de colores de alto contraste optimizada para telemetría IoT y finanzas.
+ * AhorraTech - Modern Light Theme Design Tokens
+ * Paleta corporativa de alto contraste, limpia y profesional (Modo Claro).
+ * Cero tonos neón agresivos, máxima legibilidad y estética FinTech contemporánea.
  */
 
 export const colors = {
   background: {
-    base: '#070B14',
-    card: '#0D1527',
-    subtle: '#111C33',
-    elevated: '#162544',
+    base: '#F8FAFC',       // Fondo principal limpio Slate-50
+    card: '#FFFFFF',       // Superficie de tarjetas blanco puro
+    subtle: '#F1F5F9',     // Fondo suave Slate-100 para chips e inputs
+    elevated: '#FFFFFF',   // Superficies elevadas
   },
   border: {
-    subtle: '#1E2D4A',
-    highlight: '#2E436B',
-    accent: '#00F0FF',
-    warning: '#F59E0B',
-    danger: '#EF4444',
+    subtle: '#E2E8F0',     // Borde suave Slate-200
+    highlight: '#CBD5E1',  // Borde destacado Slate-300
+    accent: '#2563EB',     // Azul real profesional (sin neón)
+    warning: '#D97706',    // Ámbar sobrio
+    danger: '#DC2626',     // Carmesí nítido
   },
   text: {
-    primary: '#F8FAFC',
-    secondary: '#94A3B8',
-    muted: '#64748B',
+    primary: '#0F172A',    // Texto principal Slate-900 (máximo contraste)
+    secondary: '#475569',  // Texto secundario Slate-600
+    muted: '#64748B',      // Texto apagado Slate-500
     white: '#FFFFFF',
-    dark: '#070B14',
+    dark: '#0F172A',
   },
   brand: {
-    electricBlue: '#0066FF',
-    electricBlueGlow: '#3B82F6',
-    telemetryCyan: '#00F0FF',
-    telemetryCyanGlow: '#38BDF8',
+    electricBlue: '#1D4ED8',      // Azul zafiro refinado
+    electricBlueGlow: '#2563EB',
+    telemetryCyan: '#0284C7',     // Azul océano profesional (adiós neón chillón)
+    telemetryCyanGlow: '#0369A1',
   },
   status: {
-    success: '#10B981',
-    successBg: 'rgba(16, 185, 129, 0.12)',
-    warning: '#F59E0B',
-    warningBg: 'rgba(245, 158, 11, 0.12)',
-    danger: '#EF4444',
-    dangerBg: 'rgba(239, 68, 68, 0.12)',
-    info: '#3B82F6',
-    infoBg: 'rgba(59, 130, 246, 0.12)',
+    success: '#059669',
+    successBg: 'rgba(5, 150, 105, 0.08)',
+    warning: '#D97706',
+    warningBg: 'rgba(217, 119, 6, 0.08)',
+    danger: '#DC2626',
+    dangerBg: 'rgba(220, 38, 38, 0.08)',
+    info: '#2563EB',
+    infoBg: 'rgba(37, 99, 235, 0.08)',
   },
   telemetry: {
-    voltage: '#A855F7',   // Púrpura eléctrico
-    current: '#F59E0B',   // Ámbar
-    amp: '#F59E0B',
-    power: '#00F0FF',     // Cyan
-    frequency: '#10B981', // Verde esmeralda
-    hz: '#10B981',
-    powerFactor: '#EC4899', // Rosa neón
-    pf: '#EC4899',
-    energy: '#3B82F6',    // Azul zafiro
+    voltage: '#7C3AED',   // Violeta técnico
+    current: '#D97706',   // Ámbar eléctrico
+    amp: '#D97706',
+    power: '#0284C7',     // Océano técnico
+    frequency: '#059669', // Esmeralda
+    hz: '#059669',
+    powerFactor: '#DB2777', // Magenta sofisticado
+    pf: '#DB2777',
+    energy: '#2563EB',    // Azul real
   },
   chart: {
-    lineStroke: '#00F0FF',
-    gradientStart: 'rgba(0, 240, 255, 0.45)',
-    gradientEnd: 'rgba(0, 240, 255, 0.00)',
-    barPrimary: '#0066FF',
-    barWarning: '#F59E0B',
-    barDanger: '#EF4444',
-    gridLines: '#1E2D4A',
+    lineStroke: '#2563EB',
+    gradientStart: 'rgba(37, 99, 235, 0.22)',
+    gradientEnd: 'rgba(37, 99, 235, 0.00)',
+    barPrimary: '#2563EB',
+    barWarning: '#D97706',
+    barDanger: '#DC2626',
+    gridLines: '#E2E8F0',
   },
 } as const;
 

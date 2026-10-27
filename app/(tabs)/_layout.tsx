@@ -1,7 +1,7 @@
 /**
  * AhorraTech - Tabs Layout
- * Barra de navegación inferior con indicador de píldora activa,
- * soporte para Safe Area (sin colisión con botones de Android) y diseño Smart Grid.
+ * Barra de navegación inferior en Modo Claro de alto contraste con safe areas
+ * dinámicas para Android (sin colisión con barra de 3 botones) e iconos perfectamente visibles.
  */
 
 import React from 'react';
@@ -20,13 +20,13 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand.telemetryCyan,
+        tabBarActiveTintColor: colors.brand.electricBlue,
         tabBarInactiveTintColor: colors.text.muted,
         tabBarStyle: [
           styles.tabBar,
           {
-            height: 60 + insets.bottom,
-            paddingBottom: insets.bottom > 0 ? insets.bottom + 4 : 8,
+            height: 64 + insets.bottom,
+            paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : 10,
           },
         ],
         tabBarLabelStyle: styles.tabLabel,
@@ -36,9 +36,13 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Monitoreo',
-          tabBarIcon: ({ color, focused, size }) => (
+          tabBarIcon: ({ color, focused }) => (
             <View style={focused ? styles.activeIconPill : styles.iconPill}>
-              <MaterialCommunityIcons name="lightning-bolt" size={size + 1} color={color as string} />
+              <MaterialCommunityIcons
+                name="lightning-bolt"
+                size={22}
+                color={focused ? colors.brand.electricBlue : colors.text.muted}
+              />
             </View>
           ),
           tabBarBadge: alertsCount > 0 ? alertsCount : undefined,
@@ -49,9 +53,13 @@ export default function TabLayout() {
         name="limits"
         options={{
           title: 'Presupuesto',
-          tabBarIcon: ({ color, focused, size }) => (
+          tabBarIcon: ({ color, focused }) => (
             <View style={focused ? styles.activeIconPill : styles.iconPill}>
-              <Feather name="dollar-sign" size={size} color={color as string} />
+              <Feather
+                name="dollar-sign"
+                size={20}
+                color={focused ? colors.brand.electricBlue : colors.text.muted}
+              />
             </View>
           ),
         }}
@@ -60,9 +68,13 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Ajustes',
-          tabBarIcon: ({ color, focused, size }) => (
+          tabBarIcon: ({ color, focused }) => (
             <View style={focused ? styles.activeIconPill : styles.iconPill}>
-              <Feather name="sliders" size={size} color={color as string} />
+              <Feather
+                name="sliders"
+                size={20}
+                color={focused ? colors.brand.electricBlue : colors.text.muted}
+              />
             </View>
           ),
         }}
@@ -73,28 +85,33 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#080E1B',
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border.subtle,
     borderTopWidth: 1,
     paddingTop: 6,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
     marginTop: 2,
   },
   activeIconPill: {
-    backgroundColor: 'rgba(0, 240, 255, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 12,
+    backgroundColor: 'rgba(29, 78, 216, 0.10)',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },

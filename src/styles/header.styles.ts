@@ -1,6 +1,6 @@
 /**
  * AhorraTech - Header Styles
- * Hoja de estilos desacoplada para la barra de navegación superior.
+ * Hoja de estilos desacoplada para la barra superior en Modo Claro.
  */
 
 import { StyleSheet } from 'react-native';
@@ -12,10 +12,10 @@ export const headerStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
-    backgroundColor: colors.background.base,
+    backgroundColor: colors.background.card,
   },
   leftSection: {
     flexDirection: 'row',
@@ -30,7 +30,7 @@ export const headerStyles = StyleSheet.create({
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
+    backgroundColor: colors.background.subtle,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 20,
@@ -52,7 +52,7 @@ export const headerStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.background.card,
+    backgroundColor: colors.background.subtle,
     borderWidth: 1,
     borderColor: colors.border.subtle,
     justifyContent: 'center',
@@ -61,18 +61,18 @@ export const headerStyles = StyleSheet.create({
   scannerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 240, 255, 0.12)',
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
     borderWidth: 1,
-    borderColor: colors.brand.telemetryCyan,
+    borderColor: 'rgba(37, 99, 235, 0.25)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 18,
     gap: 5,
   },
   scannerButtonText: {
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.3,
   },
 });

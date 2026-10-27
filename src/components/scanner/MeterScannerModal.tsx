@@ -185,7 +185,7 @@ export const MeterScannerModal: React.FC<MeterScannerModalProps> = ({ visible, o
                 <Image source={{ uri: selectedImage }} style={scannerStyles.previewImage} />
               ) : (
                 <View style={scannerStyles.viewfinderPlaceholder}>
-                  <MaterialCommunityIcons name="camera-metering-center" size={48} color={colors.brand.telemetryCyan} />
+                  <MaterialCommunityIcons name="camera-metering-center" size={48} color={colors.brand.electricBlue} />
                   <Text style={scannerStyles.placeholderText}>
                     Apunta la cámara a los números del medidor de luz residencial (CRE / DELAPAZ / ELFEC)
                   </Text>
@@ -232,7 +232,7 @@ export const MeterScannerModal: React.FC<MeterScannerModalProps> = ({ visible, o
                   </View>
                   <View>
                     <Text style={scannerStyles.metaLabel}>Diferencia Ciclo</Text>
-                    <Text style={[scannerStyles.metaVal, { color: colors.brand.telemetryCyan }]}>
+                    <Text style={[scannerStyles.metaVal, { color: colors.brand.electricBlue }]}>
                       {differenceKWh >= 0 ? `+${differenceKWh} kWh` : `${differenceKWh} kWh`}
                     </Text>
                   </View>

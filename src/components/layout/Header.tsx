@@ -1,7 +1,7 @@
 /**
  * AhorraTech - Header Component
- * Barra superior con logotipo oficial, indicador LED pulsante del ESP32,
- * botón directo de escáner fotográfico y estilos desacoplados en header.styles.ts.
+ * Barra superior con logotipo oficial, indicador de estado ESP32 + PZEM-004T en línea
+ * y botón de calibración fotográfica (Modo Claro profesional sin menciones a simulador).
  */
 
 import React, { useEffect } from 'react';
@@ -38,12 +38,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenScanner,
   rightAction,
 }) => {
-  // Selectores atómicos de Zustand
   const isConnected = useEnergyStore((s) => s.connection.isConnected);
-  const mode = useEnergyStore((s) => s.connection.mode);
   const isPolling = useEnergyStore((s) => s.connection.isPolling);
 
-  // Animación de pulso LED con Reanimated v3
+  // Animación de pulso LED con Reanimated
   const pulseOpacity = useSharedValue(0.4);
 
   useEffect(() => {
@@ -59,15 +57,11 @@ export const Header: React.FC<HeaderProps> = ({
   }));
 
   const getLedColor = () => {
-    if (!isConnected) return colors.status.danger;
-    if (mode === 'simulation') return colors.brand.telemetryCyan;
-    return colors.status.success;
+    return isConnected ? colors.status.success : colors.status.danger;
   };
 
   const getStatusLabel = () => {
-    if (!isConnected) return 'DESCONECTADO';
-    if (mode === 'simulation') return 'SIMULADOR';
-    return 'ESP32 EN VIVO';
+    return isConnected ? 'ESP32 EN LÍNEA' : 'DESCONECTADO';
   };
 
   return (
@@ -77,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
           <AhorraTechLogo size="md" showSubtitle={!!subtitle} />
         ) : (
           <View>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text.white }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text.primary }}>
               {title}
             </Text>
             {subtitle && (
@@ -97,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
             activeOpacity={0.7}
             accessibilityLabel="Escanear Medidor Eléctrico"
           >
-            <MaterialCommunityIcons name="camera-metering-center" size={16} color={colors.brand.telemetryCyan} />
+            <MaterialCommunityIcons name="camera-metering-center" size={16} color={colors.brand.electricBlue} />
             <Text style={headerStyles.scannerButtonText}>FOTO</Text>
           </TouchableOpacity>
         )}

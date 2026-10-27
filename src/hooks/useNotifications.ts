@@ -38,26 +38,31 @@ export function useNotifications() {
   const ratePerKWh = useEnergyStore((s) => s.budgetConfig.ratePerKWh);
   const warningThresholdPct = useEnergyStore((s) => s.budgetConfig.warningThresholdPct);
 
-  // Inicializar canales de Android y solicitar permisos
+  // Inicializar canales de Android y solicitar permisos (protegido contra limitaciones de Expo Go)
   useEffect(() => {
     async function configureNotifications() {
       try {
         if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('energy-alerts', {
-            name: 'Alertas Eléctricas y Presupuesto',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#00F0FF',
-            sound: 'default',
-          });
+          // Intentar configurar canal nativo de forma segura
+          try {
+            await Notifications.setNotificationChannelAsync('energy-alerts', {
+              name: 'Alertas Eléctricas y Presupuesto',
+              importance: Notifications.AndroidImportance.MAX,
+              vibrationPattern: [0, 250, 250, 250],
+              lightColor: '#2563EB',
+              sound: 'default',
+            });
+          } catch {
+            // Silencioso en Expo Go (los canales nativos requieren Development Build / APK nativa)
+          }
         }
 
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        const { status: existingStatus } = await Notifications.getPermissionsAsync().catch(() => ({ status: 'undetermined' }));
         if (existingStatus !== 'granted') {
-          await Notifications.requestPermissionsAsync();
+          await Notifications.requestPermissionsAsync().catch(() => {});
         }
-      } catch (err) {
-        console.warn('Configuración de notificaciones del sistema no disponible en Expo Go:', err);
+      } catch {
+        // Ignorar de forma segura en entornos de desarrollo cliente
       }
     }
 

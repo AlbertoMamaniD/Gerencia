@@ -56,9 +56,9 @@ export const Badge: React.FC<BadgeProps> = ({
       default:
         return {
           bg: colors.status.infoBg,
-          text: colors.brand.telemetryCyan,
-          dot: colors.brand.telemetryCyan,
-          border: 'rgba(0, 240, 255, 0.3)',
+          text: colors.brand.electricBlue,
+          dot: colors.brand.electricBlue,
+          border: 'rgba(37, 99, 235, 0.25)',
         };
     }
   };

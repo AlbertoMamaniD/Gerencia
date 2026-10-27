@@ -38,7 +38,7 @@ export const TelemetryGrid: React.FC<TelemetryGridProps> = ({
       {/* Cabecera Técnica de Instrumentación */}
       <View style={dashboardStyles.telemetryHeader}>
         <View style={dashboardStyles.telemetryHeaderLeft}>
-          <MaterialCommunityIcons name="chip" size={16} color={colors.brand.telemetryCyan} />
+          <MaterialCommunityIcons name="chip" size={16} color={colors.brand.electricBlue} />
           <Text style={dashboardStyles.telemetryHeaderTitle}>
             TELEMETRÍA EN VIVO · PZEM-004T
           </Text>
@@ -107,7 +107,7 @@ export const TelemetryGrid: React.FC<TelemetryGridProps> = ({
       {/* Franja de Energía Activa Acumulada */}
       <View style={dashboardStyles.energyTotalRow}>
         <View style={dashboardStyles.energyTotalLeft}>
-          <MaterialCommunityIcons name="lightning-bolt-circle" size={20} color={colors.brand.telemetryCyan} />
+          <MaterialCommunityIcons name="lightning-bolt-circle" size={20} color={colors.brand.electricBlue} />
           <View>
             <Text style={dashboardStyles.energyTotalTitle}>ENERGÍA ACTIVA ACUMULADA</Text>
             <Text style={dashboardStyles.energyTotalSubtitle}>Lectura acumulada del sensor de red</Text>

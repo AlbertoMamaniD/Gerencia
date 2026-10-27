@@ -1,20 +1,31 @@
 /**
  * AhorraTech - Limits & Budget Styles
- * Hoja de estilos desacoplada para la pantalla de control presupuestario y sobrecarga.
+ * Hoja de estilos desacoplada para la pantalla de control presupuestario y sobrecarga en Modo Claro.
  */
 
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../theme/colors';
 
 export const limitsStyles = StyleSheet.create({
   panel: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: '#090F1C',
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.background.card,
     overflow: 'hidden',
     marginVertical: 7,
     padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   panelHeaderRow: {
     flexDirection: 'row',
@@ -30,7 +41,7 @@ export const limitsStyles = StyleSheet.create({
   panelTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.2,
   },
   panelDesc: {
@@ -46,16 +57,16 @@ export const limitsStyles = StyleSheet.create({
   },
   presetBtn: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.background.subtle,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border.subtle,
     alignItems: 'center',
   },
   presetBtnActive: {
-    backgroundColor: 'rgba(0, 240, 255, 0.12)',
-    borderColor: colors.brand.telemetryCyan,
+    backgroundColor: 'rgba(37, 99, 235, 0.10)',
+    borderColor: colors.brand.electricBlue,
   },
   presetText: {
     fontSize: 11,
@@ -63,29 +74,31 @@ export const limitsStyles = StyleSheet.create({
     color: colors.text.secondary,
   },
   presetTextActive: {
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     fontWeight: '800',
   },
   conversionBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 240, 255, 0.05)',
+    backgroundColor: 'rgba(37, 99, 235, 0.05)',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 10,
     marginTop: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0, 240, 255, 0.2)',
+    borderColor: 'rgba(37, 99, 235, 0.2)',
   },
   conversionLabel: {
     fontSize: 11,
     color: colors.text.secondary,
+    fontWeight: '500',
   },
   conversionValue: {
     fontSize: 12,
     fontWeight: '800',
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
+    fontVariant: ['tabular-nums'],
   },
   thresholdRow: {
     flexDirection: 'row',
@@ -96,15 +109,15 @@ export const limitsStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     marginHorizontal: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.background.subtle,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border.subtle,
     alignItems: 'center',
   },
   thresholdBtnActive: {
-    borderColor: colors.brand.telemetryCyan,
-    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    borderColor: colors.brand.electricBlue,
+    backgroundColor: 'rgba(37, 99, 235, 0.12)',
   },
   thresholdText: {
     fontSize: 12,
@@ -112,7 +125,7 @@ export const limitsStyles = StyleSheet.create({
     color: colors.text.secondary,
   },
   thresholdTextActive: {
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     fontWeight: '800',
   },
   thresholdDesc: {

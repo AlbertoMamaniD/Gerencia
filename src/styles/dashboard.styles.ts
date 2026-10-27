@@ -1,35 +1,36 @@
 /**
  * AhorraTech - Dashboard Screen Styles
- * Hoja de estilos desacoplada para la Consola Maestra de Presupuesto,
- * Matriz de Telemetría PZEM-004T y Deck de Analíticas.
+ * Hoja de estilos desacoplada para la Consola Maestra, Matriz de Telemetría
+ * y Deck de Analíticas en Modo Claro Profesional (FinTech Light Theme).
  */
 
 import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../theme/colors';
 
 export const dashboardStyles = StyleSheet.create({
-  // Consola Maestra de Presupuesto (Cockpit)
+  // Consola Maestra de Presupuesto (Cockpit Light)
   cockpitContainer: {
-    borderRadius: 22,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.09)',
-    backgroundColor: '#0A101D',
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.background.card,
     overflow: 'hidden',
     marginVertical: 8,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 14,
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 6,
+        elevation: 3,
       },
     }),
   },
   cockpitGradient: {
     padding: 18,
+    backgroundColor: colors.background.card,
   },
   cockpitTopRow: {
     flexDirection: 'row',
@@ -40,18 +41,18 @@ export const dashboardStyles = StyleSheet.create({
   cycleChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: colors.background.subtle,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border.subtle,
   },
   cycleChipDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.brand.telemetryCyan,
+    backgroundColor: colors.brand.electricBlue,
     marginRight: 6,
   },
   cycleChipText: {
@@ -105,40 +106,40 @@ export const dashboardStyles = StyleSheet.create({
   heroCurrency: {
     fontSize: 20,
     fontWeight: '800',
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     marginRight: 4,
   },
   heroAmount: {
     fontSize: 34,
     fontWeight: '900',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -1,
     fontVariant: ['tabular-nums'],
   },
   heroBudgetMeta: {
     fontSize: 12,
     color: colors.text.secondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   heroProjectionTag: {
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 240, 255, 0.07)',
+    backgroundColor: 'rgba(37, 99, 235, 0.06)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0, 240, 255, 0.25)',
+    borderColor: 'rgba(37, 99, 235, 0.2)',
   },
   heroProjectionText: {
     fontSize: 11,
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     fontWeight: '600',
   },
 
-  // Gauge circular miniatura integrado
+  // Gauge circular de precisión
   gaugeContainer: {
     width: 100,
     height: 100,
@@ -151,8 +152,8 @@ export const dashboardStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   gaugePctNumber: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
     letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
   },
@@ -164,7 +165,7 @@ export const dashboardStyles = StyleSheet.create({
     marginTop: -2,
   },
 
-  // Fila inferior de métricas integradas (Sin cajitas separadas)
+  // Fila inferior de métricas integradas
   cockpitStatsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -172,7 +173,7 @@ export const dashboardStyles = StyleSheet.create({
     marginTop: 18,
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: colors.border.subtle,
   },
   statCol: {
     flex: 1,
@@ -180,7 +181,7 @@ export const dashboardStyles = StyleSheet.create({
   },
   statColBorder: {
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(255, 255, 255, 0.1)',
+    borderRightColor: colors.border.subtle,
   },
   statLabel: {
     fontSize: 10,
@@ -202,9 +203,9 @@ export const dashboardStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    backgroundColor: 'rgba(37, 99, 235, 0.04)',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0, 240, 255, 0.25)',
+    borderTopColor: colors.border.subtle,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -215,17 +216,17 @@ export const dashboardStyles = StyleSheet.create({
     flex: 1,
   },
   scannerDockIconWrap: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 240, 255, 0.18)',
+    backgroundColor: 'rgba(37, 99, 235, 0.10)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scannerDockTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.1,
   },
   scannerDockSubtitle: {
@@ -233,15 +234,15 @@ export const dashboardStyles = StyleSheet.create({
     color: colors.text.secondary,
   },
   scannerDockBadge: {
-    backgroundColor: colors.brand.telemetryCyan,
+    backgroundColor: colors.brand.electricBlue,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 7,
   },
   scannerDockBadgeText: {
-    color: '#070B14',
+    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 0.4,
   },
 
@@ -249,10 +250,21 @@ export const dashboardStyles = StyleSheet.create({
   telemetryDeckContainer: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: '#090F1C',
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.background.card,
     overflow: 'hidden',
     marginVertical: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   telemetryHeader: {
     flexDirection: 'row',
@@ -261,7 +273,7 @@ export const dashboardStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: colors.border.subtle,
   },
   telemetryHeaderLeft: {
     flexDirection: 'row',
@@ -302,11 +314,11 @@ export const dashboardStyles = StyleSheet.create({
   },
   matrixCellRightBorder: {
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(255, 255, 255, 0.08)',
+    borderRightColor: colors.border.subtle,
   },
   matrixCellBottomBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: colors.border.subtle,
   },
   cellLabelRow: {
     flexDirection: 'row',
@@ -339,9 +351,9 @@ export const dashboardStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'rgba(0, 102, 255, 0.05)',
+    backgroundColor: 'rgba(37, 99, 235, 0.04)',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: colors.border.subtle,
   },
   energyTotalLeft: {
     flexDirection: 'row',
@@ -360,7 +372,7 @@ export const dashboardStyles = StyleSheet.create({
   energyTotalValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     fontVariant: ['tabular-nums'],
   },
 
@@ -368,11 +380,22 @@ export const dashboardStyles = StyleSheet.create({
   analyticsDeckContainer: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: '#090F1C',
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.background.card,
     overflow: 'hidden',
     marginVertical: 8,
     padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   segmentedHeader: {
     flexDirection: 'row',
@@ -386,7 +409,7 @@ export const dashboardStyles = StyleSheet.create({
   segmentedTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.2,
   },
   segmentedSubtitle: {
@@ -396,11 +419,11 @@ export const dashboardStyles = StyleSheet.create({
   },
   tabSwitcher: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.background.subtle,
     borderRadius: 10,
     padding: 3,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border.subtle,
   },
   tabSwitchBtn: {
     paddingHorizontal: 10,
@@ -416,12 +439,13 @@ export const dashboardStyles = StyleSheet.create({
     color: colors.text.muted,
   },
   tabSwitchTextActive: {
-    color: colors.text.white,
+    color: '#FFFFFF',
   },
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 6,
+    width: '100%',
   },
   bottomSpacer: {
     height: 16,
