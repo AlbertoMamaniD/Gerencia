@@ -1,7 +1,7 @@
 /**
  * AhorraTech - Header Component
- * Barra superior con logotipo oficial, indicador de estado ESP32 + PZEM-004T en línea
- * y botón de calibración fotográfica (Modo Claro profesional sin menciones a simulador).
+ * Barra superior con logotipo oficial e indicador de enlace ESP32 + PZEM-004T en línea.
+ * Diseño limpio en Modo Claro profesional.
  */
 
 import React, { useEffect } from 'react';
@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { AhorraTechLogo } from '../brand/AhorraTechLogo';
 import { useEnergyStore } from '../../store/useEnergyStore';
 import { headerStyles } from '../../styles/header.styles';
@@ -23,7 +23,6 @@ interface HeaderProps {
   title?: string;
   subtitle?: string;
   showLogo?: boolean;
-  onOpenScanner?: () => void;
   rightAction?: {
     iconName: keyof typeof Feather.glyphMap;
     onPress: () => void;
@@ -35,7 +34,6 @@ export const Header: React.FC<HeaderProps> = ({
   title,
   subtitle,
   showLogo = true,
-  onOpenScanner,
   rightAction,
 }) => {
   const isConnected = useEnergyStore((s) => s.connection.isConnected);
@@ -84,18 +82,6 @@ export const Header: React.FC<HeaderProps> = ({
       </View>
 
       <View style={headerStyles.rightSection}>
-        {onOpenScanner && (
-          <TouchableOpacity
-            style={headerStyles.scannerButton}
-            onPress={onOpenScanner}
-            activeOpacity={0.88}
-            accessibilityLabel="Escanear Medidor Eléctrico"
-          >
-            <MaterialCommunityIcons name="camera-metering-center" size={16} color={colors.brand.electricBlue} />
-            <Text style={headerStyles.scannerButtonText}>FOTO</Text>
-          </TouchableOpacity>
-        )}
-
         <View style={headerStyles.statusPill}>
           <Animated.View
             style={[

@@ -1,7 +1,7 @@
 /**
  * AhorraTech - Tabs Layout
- * Barra de navegación inferior en Modo Claro de alto contraste con safe areas
- * dinámicas para Android, iconos Ionicons nítidos y efecto de toque (ripple) suave.
+ * Barra de navegación inferior en Modo Claro de alto contraste con 4 pestañas:
+ * Monitoreo, Escáner (Foto OCR), Presupuesto y Ajustes.
  */
 
 import React from 'react';
@@ -22,7 +22,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.brand.electricBlue,
         tabBarInactiveTintColor: colors.text.muted,
-        // Sombreado de toque suave y sutil (reemplaza el sombreado oscuro brusco de Android)
+        // Sombreado de toque suave y sutil
         tabBarButton: ({ ref, ...rest }) => (
           <Pressable
             {...rest}
@@ -56,6 +56,19 @@ export default function TabLayout() {
           ),
           tabBarBadge: alertsCount > 0 ? alertsCount : undefined,
           tabBarBadgeStyle: styles.badge,
+        }}
+      />
+      <Tabs.Screen
+        name="scanner"
+        options={{
+          title: 'Escáner',
+          tabBarIcon: ({ focused, size }) => (
+            <Ionicons
+              name={focused ? 'camera' : 'camera-outline'}
+              size={size || 24}
+              color={focused ? colors.brand.electricBlue : colors.text.muted}
+            />
+          ),
         }}
       />
       <Tabs.Screen
@@ -104,7 +117,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.2,
     marginTop: 2,

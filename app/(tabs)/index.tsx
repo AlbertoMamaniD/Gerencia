@@ -1,10 +1,10 @@
 /**
  * AhorraTech - Dashboard Principal
- * Monitoreo de telemetría PZEM-004T en vivo, gasto en Bs, proyección y escáner fotográfico de medidor.
- * Rediseñado con estética de ingeniería industrial y FinTech (sin plantillas genéricas de IA).
+ * Monitoreo de telemetría PZEM-004T en vivo, gasto en Bs, proyección y analíticas.
+ * Diseño limpio en Modo Claro profesional.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { Header } from '../../src/components/layout/Header';
@@ -12,14 +12,11 @@ import { AlertBanner } from '../../src/components/ui/AlertBanner';
 import { BudgetCockpit } from '../../src/components/dashboard/BudgetCockpit';
 import { TelemetryGrid } from '../../src/components/dashboard/TelemetryGrid';
 import { AnalyticsDeck } from '../../src/components/dashboard/AnalyticsDeck';
-import { MeterScannerModal } from '../../src/components/scanner/MeterScannerModal';
 import { useEnergyStore } from '../../src/store/useEnergyStore';
 import { calculateFinancialProjection } from '../../src/utils/calculations';
 import { dashboardStyles } from '../../src/styles/dashboard.styles';
 
 export default function DashboardScreen() {
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-
   // Selectores atómicos de Zustand para óptimo rendimiento a 60 FPS
   const liveReading = useEnergyStore((s) => s.liveReading);
   const powerHistory = useEnergyStore((s) => s.powerHistory);
@@ -53,7 +50,6 @@ export default function DashboardScreen() {
         <Header
           showLogo={true}
           subtitle="Telemetría & Presupuesto en Tiempo Real"
-          onOpenScanner={() => setIsScannerOpen(true)}
         />
       }
     >
@@ -72,7 +68,6 @@ export default function DashboardScreen() {
       <BudgetCockpit
         projection={projection}
         monthlyBudgetBs={budgetConfig.monthlyBudgetBs}
-        onOpenScanner={() => setIsScannerOpen(true)}
       />
 
       {/* 2. Matriz Integrada de Instrumentación Eléctrica PZEM-004T */}
@@ -93,12 +88,6 @@ export default function DashboardScreen() {
       />
 
       <View style={dashboardStyles.bottomSpacer} />
-
-      {/* Modal de Escaneo y Calibración Óptica con Cámara */}
-      <MeterScannerModal
-        visible={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-      />
     </ScreenWrapper>
   );
 }

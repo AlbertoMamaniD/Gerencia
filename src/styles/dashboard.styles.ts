@@ -198,53 +198,7 @@ export const dashboardStyles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  // Botón dockeado de Escaneo Fotográfico de Medidor
-  scannerDockButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(37, 99, 235, 0.04)',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.subtle,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  scannerDockLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  scannerDockIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: 'rgba(37, 99, 235, 0.10)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scannerDockTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text.primary,
-    letterSpacing: -0.1,
-  },
-  scannerDockSubtitle: {
-    fontSize: 10,
-    color: colors.text.secondary,
-  },
-  scannerDockBadge: {
-    backgroundColor: colors.brand.electricBlue,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 7,
-  },
-  scannerDockBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-  },
+
 
   // Matriz de Telemetría Eléctrica (TelemetryConsole)
   telemetryDeckContainer: {

@@ -2,14 +2,14 @@
  * AhorraTech - BudgetCockpit Component
  * Consola Maestra de Presupuesto & Facturación Residencial en Bolivianos (Bs).
  * Combina en una sola superficie limpia y elegante el valor actual, meta mensual,
- * micro-gauge SVG de precisión, proyección a fin de ciclo y dock de escaneo de medidor en Modo Claro.
+ * micro-gauge SVG de precisión y proyección a fin de ciclo en Modo Claro.
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
-import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { FinancialProjection } from '../../types/energy.types';
 import { colors } from '../../theme/colors';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
@@ -18,13 +18,11 @@ import { dashboardStyles } from '../../styles/dashboard.styles';
 interface BudgetCockpitProps {
   projection: FinancialProjection;
   monthlyBudgetBs: number;
-  onOpenScanner: () => void;
 }
 
 export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
   projection,
   monthlyBudgetBs,
-  onOpenScanner,
 }) => {
   const {
     currentCostBs,
@@ -179,27 +177,6 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
           </View>
         </View>
       </LinearGradient>
-
-      {/* Ribbon de Calibración Óptica con Escaneo de Medidor */}
-      <TouchableOpacity
-        style={dashboardStyles.scannerDockButton}
-        onPress={onOpenScanner}
-        activeOpacity={0.88}
-        accessibilityLabel="Escanear Medidor con Foto"
-      >
-        <View style={dashboardStyles.scannerDockLeft}>
-          <View style={dashboardStyles.scannerDockIconWrap}>
-            <MaterialCommunityIcons name="camera-metering-center" size={18} color={colors.brand.electricBlue} />
-          </View>
-          <View>
-            <Text style={dashboardStyles.scannerDockTitle}>Calibrar Medidor Físico con Foto</Text>
-            <Text style={dashboardStyles.scannerDockSubtitle}>Lectura óptica de display para sincronizar acumulador</Text>
-          </View>
-        </View>
-        <View style={dashboardStyles.scannerDockBadge}>
-          <Text style={dashboardStyles.scannerDockBadgeText}>FOTO OCR</Text>
-        </View>
-      </TouchableOpacity>
     </View>
   );
 };

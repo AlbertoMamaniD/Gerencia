@@ -3,12 +3,11 @@
  * Hoja de estilos desacoplada para el escáner fotográfico de medidores eléctricos en Modo Claro.
  */
 
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../theme/colors';
 
-const { width } = Dimensions.get('window');
-
 export const scannerStyles = StyleSheet.create({
+  // Estilos de Modal (si se utiliza como diálogo)
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
@@ -59,9 +58,48 @@ export const scannerStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 14,
   },
+
+  // Estilos de Tarjeta y Pantalla Completa
+  panelCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    padding: 16,
+    marginVertical: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -0.2,
+  },
+  sectionDesc: {
+    fontSize: 11,
+    color: colors.text.muted,
+    marginBottom: 12,
+    lineHeight: 16,
+  },
   viewfinderBox: {
     width: '100%',
-    height: 220,
+    height: 200,
     borderRadius: 16,
     backgroundColor: colors.background.subtle,
     overflow: 'hidden',
@@ -82,10 +120,10 @@ export const scannerStyles = StyleSheet.create({
   },
   placeholderText: {
     color: colors.text.secondary,
-    fontSize: 13,
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 18,
+    marginTop: 8,
+    lineHeight: 16,
     fontWeight: '500',
   },
   laserLine: {
@@ -167,14 +205,14 @@ export const scannerStyles = StyleSheet.create({
     marginVertical: 4,
   },
   kwhNumber: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: colors.text.primary,
     letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
   },
   costText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: colors.brand.electricBlue,
     fontVariant: ['tabular-nums'],
@@ -200,12 +238,66 @@ export const scannerStyles = StyleSheet.create({
   buttonsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 14,
+    marginTop: 12,
   },
   actionBtnHalf: {
     flex: 1,
   },
   syncBtn: {
     marginTop: 10,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.subtle,
+  },
+  historyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  historyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyDate: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  historySerial: {
+    fontSize: 10,
+    color: colors.text.muted,
+    marginTop: 1,
+  },
+  historyKWh: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.brand.electricBlue,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'right',
+  },
+  historyCost: {
+    fontSize: 10,
+    color: colors.text.secondary,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+    marginTop: 1,
+  },
+  emptyHistoryText: {
+    fontSize: 12,
+    color: colors.text.muted,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  bottomSpacer: {
+    height: 24,
   },
 });
