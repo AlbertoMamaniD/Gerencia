@@ -34,6 +34,8 @@ export interface DeviceConnection {
   errorMessage: string | null;
   rssi?: number;                  // Nivel de señal WiFi en dBm (opcional de ESP32)
   geminiApiKey?: string;          // Clave de API gratuita de Google Gemini AI Studio
+  supabaseUrl?: string;           // URL del proyecto Supabase
+  supabaseAnonKey?: string;       // Clave pública anónima de Supabase
 }
 
 export interface LivePowerPoint {
