@@ -47,8 +47,9 @@ export default function ScannerScreen() {
       const result = await processMeterImage(uri, currentEnergy, { base64Image: base64, geminiApiKey: connection.geminiApiKey });
       setScanResult(result);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } catch {
-      Alert.alert('Error OCR', 'No se pudo procesar la imagen del medidor.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo procesar la imagen.';
+      Alert.alert('Reconocimiento Óptico', msg);
     } finally {
       setIsScanning(false);
     }
@@ -60,7 +61,6 @@ export default function ScannerScreen() {
     const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8, base64: true, aspect: [4, 3] });
     if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri, res.assets[0].base64 || undefined);
   };
-
   const handlePickGallery = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8, base64: true });
     if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri, res.assets[0].base64 || undefined);
