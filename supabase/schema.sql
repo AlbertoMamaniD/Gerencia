@@ -240,6 +240,20 @@ CREATE POLICY "Access daily aggregates" ON public.daily_energy_aggregates
         )
     );
 
+-- Permisos para registro de fotos y calibraciones ópticas (App Móvil)
+CREATE POLICY "Allow insert meter_scans" ON public.meter_scans
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow select meter_scans" ON public.meter_scans
+    FOR SELECT USING (true);
+
+-- Permisos para subir y ver fotos en el Bucket meter-photos de Storage
+CREATE POLICY "Allow upload meter-photos" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'meter-photos');
+
+CREATE POLICY "Allow view meter-photos" ON storage.objects
+    FOR SELECT USING (bucket_id = 'meter-photos');
+
 -- 15. FUNCIÓN RPC PARA INGESTIÓN IOT DESDE ESP32 (Autenticación nativa por API Key)
 CREATE OR REPLACE FUNCTION public.ingest_esp32_telemetry(
     p_mac_address VARCHAR(17),

@@ -38,6 +38,8 @@ const DEFAULT_CONNECTION: DeviceConnection = {
   errorMessage: null,
   rssi: -62,
   geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://hchigziyarizebvcqwub.supabase.co',
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_6ZqtKkD9sVigU0jOLit1hg_7WMMhQxi',
 };
 
 const INITIAL_READING: PZEMReading = {
