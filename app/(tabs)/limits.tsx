@@ -55,7 +55,7 @@ export default function LimitsScreen() {
       <View style={limitsStyles.panel}>
         <View style={limitsStyles.panelHeaderRow}>
           <View style={limitsStyles.panelHeaderLeft}>
-            <Feather name="dollar-sign" size={16} color={colors.brand.telemetryCyan} />
+            <Feather name="dollar-sign" size={16} color={colors.brand.electricBlue} />
             <Text style={limitsStyles.panelTitle}>PRESUPUESTO MENSUAL MÁXIMO</Text>
           </View>
           <Badge label={`${budgetConfig.ratePerKWh} Bs/kWh`} variant="info" />
@@ -70,6 +70,7 @@ export default function LimitsScreen() {
               <TouchableOpacity
                 key={val}
                 style={[limitsStyles.presetBtn, isMatch && limitsStyles.presetBtnActive]}
+                activeOpacity={0.85}
                 onPress={() => {
                   Haptics.selectionAsync().catch(() => {});
                   setMonthlyBudgetBs(String(val));
@@ -114,6 +115,7 @@ export default function LimitsScreen() {
               <TouchableOpacity
                 key={pct}
                 style={[limitsStyles.thresholdBtn, isSelected && limitsStyles.thresholdBtnActive]}
+                activeOpacity={0.85}
                 onPress={() => {
                   Haptics.selectionAsync().catch(() => {});
                   setWarningThresholdPct(pct);

@@ -1,15 +1,15 @@
 /**
  * AhorraTech - BudgetCockpit Component
  * Consola Maestra de Presupuesto & Facturación Residencial en Bolivianos (Bs).
- * Combina en una sola superficie de alta ingeniería el valor actual, meta mensual,
- * micro-gauge SVG de precisión, proyección a fin de ciclo y dock de escaneo de medidor.
+ * Combina en una sola superficie limpia y elegante el valor actual, meta mensual,
+ * micro-gauge SVG de precisión y proyección a fin de ciclo en Modo Claro.
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
-import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { FinancialProjection } from '../../types/energy.types';
 import { colors } from '../../theme/colors';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
@@ -18,13 +18,11 @@ import { dashboardStyles } from '../../styles/dashboard.styles';
 interface BudgetCockpitProps {
   projection: FinancialProjection;
   monthlyBudgetBs: number;
-  onOpenScanner: () => void;
 }
 
 export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
   projection,
   monthlyBudgetBs,
-  onOpenScanner,
 }) => {
   const {
     currentCostBs,
@@ -68,9 +66,9 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
   return (
     <View style={dashboardStyles.cockpitContainer}>
       <LinearGradient
-        colors={['#101A2E', '#080D1A']}
+        colors={['#FFFFFF', '#F8FAFC']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 1 }}
         style={dashboardStyles.cockpitGradient}
       >
         {/* Barra superior de ciclo y estado */}
@@ -108,9 +106,9 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
             </Text>
 
             <View style={dashboardStyles.heroProjectionTag}>
-              <Feather name="trending-up" size={12} color={colors.brand.telemetryCyan} style={{ marginRight: 4 }} />
+              <Feather name="trending-up" size={12} color={colors.brand.electricBlue} style={{ marginRight: 4 }} />
               <Text style={dashboardStyles.heroProjectionText}>
-                Proyección fin de ciclo: {formatCurrency(projectedCostBs)} (~{projectedEnergyKWh.toFixed(0)} kWh)
+                Proyección: {formatCurrency(projectedCostBs)} (~{projectedEnergyKWh.toFixed(0)} kWh)
               </Text>
             </View>
           </View>
@@ -118,12 +116,12 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
           {/* Micro-Gauge Circular SVG */}
           <View style={dashboardStyles.gaugeContainer}>
             <Svg width={96} height={96} viewBox="0 0 96 96">
-              {/* Pista de fondo */}
+              {/* Pista de fondo en Modo Claro */}
               <Circle
                 cx="48"
                 cy="48"
                 r={radius}
-                stroke="rgba(255, 255, 255, 0.08)"
+                stroke={colors.border.subtle}
                 strokeWidth={strokeWidth}
                 fill="none"
               />
@@ -150,7 +148,7 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
           </View>
         </View>
 
-        {/* Fila de Estadísticas Integradas (Sin cajitas separadas) */}
+        {/* Fila de Estadísticas Integradas */}
         <View style={dashboardStyles.cockpitStatsBar}>
           <View style={[dashboardStyles.statCol, dashboardStyles.statColBorder]}>
             <Text style={dashboardStyles.statLabel}>Ritmo Diario</Text>
@@ -179,27 +177,6 @@ export const BudgetCockpit: React.FC<BudgetCockpitProps> = ({
           </View>
         </View>
       </LinearGradient>
-
-      {/* Ribbon de Calibración Óptica con Escaneo de Medidor */}
-      <TouchableOpacity
-        style={dashboardStyles.scannerDockButton}
-        onPress={onOpenScanner}
-        activeOpacity={0.8}
-        accessibilityLabel="Escanear Medidor con Foto"
-      >
-        <View style={dashboardStyles.scannerDockLeft}>
-          <View style={dashboardStyles.scannerDockIconWrap}>
-            <MaterialCommunityIcons name="camera-metering-center" size={18} color={colors.brand.telemetryCyan} />
-          </View>
-          <View>
-            <Text style={dashboardStyles.scannerDockTitle}>Calibrar Medidor Físico con Foto</Text>
-            <Text style={dashboardStyles.scannerDockSubtitle}>Lectura óptica de kWh para sincronizar acumulador</Text>
-          </View>
-        </View>
-        <View style={dashboardStyles.scannerDockBadge}>
-          <Text style={dashboardStyles.scannerDockBadgeText}>FOTO OCR</Text>
-        </View>
-      </TouchableOpacity>
     </View>
   );
 };

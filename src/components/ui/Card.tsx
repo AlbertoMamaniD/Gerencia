@@ -1,10 +1,10 @@
 /**
  * AhorraTech - Card UI Component
- * Contenedor estilizado con elevación sutil y variantes de borde según estado.
+ * Contenedor estilizado con elevación sutil y variantes de borde en Modo Claro.
  */
 
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { colors } from '../../theme/colors';
 
 export type CardVariant = 'default' | 'warning' | 'critical' | 'tech';
@@ -29,7 +29,7 @@ export const Card: React.FC<CardProps> = ({
       case 'critical':
         return colors.border.danger;
       case 'tech':
-        return colors.border.accent;
+        return colors.brand.electricBlue;
       default:
         return colors.border.subtle;
     }
@@ -38,11 +38,11 @@ export const Card: React.FC<CardProps> = ({
   const getBackgroundColor = (): string => {
     switch (variant) {
       case 'warning':
-        return 'rgba(245, 158, 11, 0.05)';
+        return 'rgba(217, 119, 6, 0.04)';
       case 'critical':
-        return 'rgba(239, 68, 68, 0.05)';
+        return 'rgba(220, 38, 38, 0.04)';
       case 'tech':
-        return 'rgba(0, 240, 255, 0.04)';
+        return 'rgba(37, 99, 235, 0.03)';
       default:
         return colors.background.card;
     }
@@ -70,6 +70,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginVertical: 6,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   innerContent: {
     padding: 16,

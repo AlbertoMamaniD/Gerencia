@@ -1,6 +1,7 @@
 /**
  * AhorraTech - Input UI Component
  * Campo de texto/numérico optimizado con soporte para unidades prefijo/sufijo (Bs, kWh, W, IP).
+ * Estilo Modo Claro de alto contraste.
  */
 
 import React, { useState } from 'react';
@@ -37,7 +38,7 @@ export const Input: React.FC<InputProps> = ({
 
   const getBorderColor = (): string => {
     if (error) return colors.status.danger;
-    if (isFocused) return colors.brand.telemetryCyan;
+    if (isFocused) return colors.brand.electricBlue;
     return colors.border.subtle;
   };
 
@@ -57,7 +58,7 @@ export const Input: React.FC<InputProps> = ({
           placeholderTextColor={colors.text.muted}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          selectionColor={colors.brand.telemetryCyan}
+          selectionColor={colors.brand.electricBlue}
           {...props}
         />
         {suffix && <Text style={styles.affixText}>{suffix}</Text>}
@@ -77,10 +78,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
-    color: colors.text.secondary,
+    fontWeight: '700',
+    color: colors.text.primary,
     marginBottom: 6,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -92,12 +93,13 @@ const styles = StyleSheet.create({
     height: 48,
   },
   inputFocused: {
-    backgroundColor: 'rgba(0, 240, 255, 0.03)',
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.brand.electricBlue,
   },
   affixText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: colors.brand.telemetryCyan,
+    fontWeight: '800',
+    color: colors.brand.electricBlue,
     marginHorizontal: 4,
   },
   input: {
@@ -106,16 +108,18 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     height: '100%',
     paddingVertical: 0,
+    fontWeight: '600',
   },
   errorText: {
     fontSize: 12,
     color: colors.status.danger,
     marginTop: 4,
     marginLeft: 2,
+    fontWeight: '600',
   },
   helperText: {
     fontSize: 12,
-    color: colors.text.muted,
+    color: colors.text.secondary,
     marginTop: 4,
     marginLeft: 2,
   },

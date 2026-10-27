@@ -1,25 +1,24 @@
 /**
  * AhorraTech - Meter Scanner & OCR Styles
- * Hoja de estilos desacoplada para el escáner fotográfico de medidores eléctricos.
+ * Hoja de estilos desacoplada para el escáner fotográfico de medidores eléctricos en Modo Claro.
  */
 
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../theme/colors';
 
-const { width } = Dimensions.get('window');
-
 export const scannerStyles = StyleSheet.create({
+  // Estilos de Modal (si se utiliza como diálogo)
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(7, 11, 20, 0.95)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.background.card,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: colors.border.highlight,
+    borderColor: colors.border.subtle,
     maxHeight: '92%',
     paddingBottom: 24,
   },
@@ -39,7 +38,7 @@ export const scannerStyles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.3,
   },
   modalSubtitle: {
@@ -59,11 +58,50 @@ export const scannerStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 14,
   },
+
+  // Estilos de Tarjeta y Pantalla Completa
+  panelCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    padding: 16,
+    marginVertical: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -0.2,
+  },
+  sectionDesc: {
+    fontSize: 11,
+    color: colors.text.muted,
+    marginBottom: 12,
+    lineHeight: 16,
+  },
   viewfinderBox: {
     width: '100%',
-    height: 220,
+    height: 200,
     borderRadius: 16,
-    backgroundColor: '#04070D',
+    backgroundColor: colors.background.subtle,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
@@ -81,22 +119,23 @@ export const scannerStyles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   placeholderText: {
-    color: colors.text.muted,
-    fontSize: 13,
+    color: colors.text.secondary,
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 18,
+    marginTop: 8,
+    lineHeight: 16,
+    fontWeight: '500',
   },
   laserLine: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: colors.brand.telemetryCyan,
-    shadowColor: colors.brand.telemetryCyan,
+    backgroundColor: colors.brand.electricBlue,
+    shadowColor: colors.brand.electricBlue,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
     elevation: 4,
   },
   cornerTopLeft: {
@@ -107,7 +146,7 @@ export const scannerStyles = StyleSheet.create({
     height: 22,
     borderTopWidth: 3,
     borderLeftWidth: 3,
-    borderColor: colors.brand.telemetryCyan,
+    borderColor: colors.brand.electricBlue,
   },
   cornerTopRight: {
     position: 'absolute',
@@ -117,7 +156,7 @@ export const scannerStyles = StyleSheet.create({
     height: 22,
     borderTopWidth: 3,
     borderRightWidth: 3,
-    borderColor: colors.brand.telemetryCyan,
+    borderColor: colors.brand.electricBlue,
   },
   cornerBottomLeft: {
     position: 'absolute',
@@ -127,7 +166,7 @@ export const scannerStyles = StyleSheet.create({
     height: 22,
     borderBottomWidth: 3,
     borderLeftWidth: 3,
-    borderColor: colors.brand.telemetryCyan,
+    borderColor: colors.brand.electricBlue,
   },
   cornerBottomRight: {
     position: 'absolute',
@@ -137,13 +176,13 @@ export const scannerStyles = StyleSheet.create({
     height: 22,
     borderBottomWidth: 3,
     borderRightWidth: 3,
-    borderColor: colors.brand.telemetryCyan,
+    borderColor: colors.brand.electricBlue,
   },
   detectionCard: {
     backgroundColor: colors.background.subtle,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0, 240, 255, 0.3)',
+    borderColor: 'rgba(37, 99, 235, 0.25)',
     padding: 14,
     marginTop: 14,
   },
@@ -155,8 +194,8 @@ export const scannerStyles = StyleSheet.create({
   },
   detectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
-    color: colors.brand.telemetryCyan,
+    fontWeight: '800',
+    color: colors.brand.electricBlue,
     letterSpacing: 0.5,
   },
   mainKWhRow: {
@@ -166,15 +205,17 @@ export const scannerStyles = StyleSheet.create({
     marginVertical: 4,
   },
   kwhNumber: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
   },
   costText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
+    fontVariant: ['tabular-nums'],
   },
   metaGrid: {
     flexDirection: 'row',
@@ -190,19 +231,73 @@ export const scannerStyles = StyleSheet.create({
   },
   metaVal: {
     fontSize: 11,
-    fontWeight: '600',
-    color: colors.text.secondary,
+    fontWeight: '700',
+    color: colors.text.primary,
     marginTop: 1,
   },
   buttonsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 14,
+    marginTop: 12,
   },
   actionBtnHalf: {
     flex: 1,
   },
   syncBtn: {
     marginTop: 10,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.subtle,
+  },
+  historyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  historyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyDate: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  historySerial: {
+    fontSize: 10,
+    color: colors.text.muted,
+    marginTop: 1,
+  },
+  historyKWh: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.brand.electricBlue,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'right',
+  },
+  historyCost: {
+    fontSize: 10,
+    color: colors.text.secondary,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+    marginTop: 1,
+  },
+  emptyHistoryText: {
+    fontSize: 12,
+    color: colors.text.muted,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  bottomSpacer: {
+    height: 24,
   },
 });

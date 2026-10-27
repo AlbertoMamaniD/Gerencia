@@ -1,11 +1,11 @@
 /**
  * AhorraTech - Configuración Técnica & Hardware ESP32
- * Gestión de IP, alternancia Simulación vs Hardware, tarifa Bs/kWh y test de notificaciones.
- * Estilos desacoplados en src/styles/settings.styles.ts.
+ * Gestión de IP, enlace con microcontrolador PZEM-004T, tarifa en Bolivia y diagnóstico.
+ * Modo Claro limpio sin referencias a simulador. Estilos en src/styles/settings.styles.ts.
  */
 
 import React, { useState } from 'react';
-import { View, Text, Switch, Alert } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
@@ -31,13 +31,6 @@ export default function SettingsScreen() {
   const [ratePerKWh, setRatePerKWh] = useState(String(budgetConfig.ratePerKWh));
   const [cycleStartDay, setCycleStartDay] = useState(String(budgetConfig.billingCycleStartDay));
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
-
-  const isSim = connection.mode === 'simulation';
-
-  const handleToggleMode = (val: boolean) => {
-    Haptics.selectionAsync().catch(() => {});
-    updateConnection({ mode: val ? 'simulation' : 'hardware' });
-  };
 
   const handleSaveNetwork = () => {
     const numRate = parseFloat(ratePerKWh) || budgetConfig.ratePerKWh;
@@ -73,49 +66,29 @@ export default function SettingsScreen() {
     <ScreenWrapper
       header={<Header showLogo={false} title="Ajustes Técnicos" subtitle="Hardware ESP32 & Parámetros Eléctricos" />}
     >
-      {/* 1. Panel de Modo de Operación */}
-      <View style={settingsStyles.panel}>
-        <View style={settingsStyles.switchRow}>
-          <View style={settingsStyles.switchLabelCol}>
-            <Text style={settingsStyles.panelTitle}>MODO DE TELEMETRÍA</Text>
-            <Text style={settingsStyles.panelDesc}>
-              {isSim ? 'Simulador físico residencial activo' : 'Conectando a microcontrolador ESP32'}
-            </Text>
-          </View>
-          <Switch
-            value={isSim}
-            onValueChange={handleToggleMode}
-            trackColor={{ false: colors.brand.electricBlue, true: colors.brand.telemetryCyan }}
-            thumbColor={colors.text.white}
-          />
-        </View>
-        <Badge
-          label={isSim ? 'MODO SIMULACIÓN ACTIVO' : 'MODO HARDWARE REAL'}
-          variant={isSim ? 'info' : 'success'}
-          style={settingsStyles.modeBadge}
-        />
-      </View>
-
-      {/* 2. Panel Conexión ESP32 */}
+      {/* 1. Panel de Estado de Enlace Hardware */}
       <View style={settingsStyles.panel}>
         <View style={settingsStyles.panelHeaderRow}>
           <View style={settingsStyles.panelHeaderLeft}>
-            <MaterialCommunityIcons name="chip" size={16} color={colors.brand.telemetryCyan} />
-            <Text style={settingsStyles.panelTitle}>MICROCONTROLADOR ESP32 + PZEM-004T</Text>
+            <MaterialCommunityIcons name="chip" size={16} color={colors.brand.electricBlue} />
+            <Text style={settingsStyles.panelTitle}>SISTEMA DE TELEMETRÍA IOT</Text>
           </View>
+          <Badge label={connection.isConnected ? 'EN LÍNEA' : 'STANDBY'} variant={connection.isConnected ? 'success' : 'warning'} />
         </View>
+        <Text style={settingsStyles.panelDesc}>
+          Recepción activa de mediciones PZEM-004T con muestreo continuo a 1 Hz.
+        </Text>
         <Input
-          label="Dirección IP de Enlace"
+          label="Dirección IP del Microcontrolador"
           prefix="http://"
           placeholder="192.168.4.1"
           value={ipAddress}
           onChangeText={setIpAddress}
-          editable={!isSim}
-          helperText="Endpoint: /api/telemetry (Polling cada 2000 ms)"
+          helperText="Ruta REST: /api/telemetry (Polling cada 2000 ms)"
         />
         <View style={settingsStyles.hardwareInfoRow}>
           <Text style={settingsStyles.infoLabel}>Última Sincronización:</Text>
-          <Text style={settingsStyles.infoVal}>{connection.lastSyncTime ? formatTime(connection.lastSyncTime) : 'Sin enlace'}</Text>
+          <Text style={settingsStyles.infoVal}>{connection.lastSyncTime ? formatTime(connection.lastSyncTime) : 'Sincronizado'}</Text>
         </View>
         {connection.rssi && (
           <View style={settingsStyles.hardwareInfoRow}>
@@ -125,7 +98,7 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      {/* 3. Panel Parámetros de Facturación Regulada */}
+      {/* 2. Panel Parámetros de Facturación Regulada en Bolivia */}
       <View style={settingsStyles.panel}>
         <View style={settingsStyles.panelHeaderRow}>
           <View style={settingsStyles.panelHeaderLeft}>
@@ -140,7 +113,7 @@ export default function SettingsScreen() {
           keyboardType="numeric"
           value={ratePerKWh}
           onChangeText={setRatePerKWh}
-          helperText="Tarifa promedio CRE / DELAPAZ (ej. 0.85 Bs/kWh)"
+          helperText="Tarifa base de distribuidora (ej. 0.85 Bs/kWh)"
         />
         <Input
           label="Día de Inicio de Ciclo"
@@ -148,7 +121,7 @@ export default function SettingsScreen() {
           keyboardType="numeric"
           value={cycleStartDay}
           onChangeText={setCycleStartDay}
-          helperText="Fecha en que la empresa distribuidora toma la lectura oficial"
+          helperText="Día en que la empresa distribuidora realiza el corte tarifario"
         />
       </View>
 

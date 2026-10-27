@@ -1,20 +1,31 @@
 /**
  * AhorraTech - Settings Styles
- * Hoja de estilos desacoplada para la pantalla de configuración técnica de hardware ESP32 y tarifas.
+ * Hoja de estilos desacoplada para la pantalla de configuración técnica en Modo Claro.
  */
 
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../theme/colors';
 
 export const settingsStyles = StyleSheet.create({
   panel: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: '#090F1C',
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.background.card,
     overflow: 'hidden',
     marginVertical: 7,
     padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#64748B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   panelHeaderRow: {
     flexDirection: 'row',
@@ -30,7 +41,7 @@ export const settingsStyles = StyleSheet.create({
   panelTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.2,
   },
   panelDesc: {
@@ -39,19 +50,6 @@ export const settingsStyles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 16,
   },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  switchLabelCol: {
-    flex: 1,
-    marginRight: 12,
-  },
-  modeBadge: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-  },
   hardwareInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -59,16 +57,17 @@ export const settingsStyles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 255, 255, 0.07)',
+    borderTopColor: colors.border.subtle,
   },
   infoLabel: {
     fontSize: 11,
-    color: colors.text.muted,
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
   infoVal: {
     fontSize: 12,
     fontWeight: '800',
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     fontVariant: ['tabular-nums'],
   },
   statusMsgContainer: {

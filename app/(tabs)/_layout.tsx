@@ -1,14 +1,14 @@
 /**
  * AhorraTech - Tabs Layout
- * Barra de navegación inferior con indicador de píldora activa,
- * soporte para Safe Area (sin colisión con botones de Android) y diseño Smart Grid.
+ * Barra de navegación inferior en Modo Claro de alto contraste con 4 pestañas:
+ * Monitoreo, Escáner (Foto OCR), Presupuesto y Ajustes.
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, Pressable } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useEnergyStore } from '../../src/store/useEnergyStore';
 import { colors } from '../../src/theme/colors';
 
@@ -20,8 +20,18 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand.telemetryCyan,
+        tabBarActiveTintColor: colors.brand.electricBlue,
         tabBarInactiveTintColor: colors.text.muted,
+        // Sombreado de toque suave y sutil
+        tabBarButton: ({ ref, ...rest }) => (
+          <Pressable
+            {...rest}
+            android_ripple={{
+              color: 'rgba(29, 78, 216, 0.08)',
+              borderless: true,
+            }}
+          />
+        ),
         tabBarStyle: [
           styles.tabBar,
           {
@@ -30,29 +40,47 @@ export default function TabLayout() {
           },
         ],
         tabBarLabelStyle: styles.tabLabel,
+        tabBarIconStyle: styles.tabIcon,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Monitoreo',
-          tabBarIcon: ({ color, focused, size }) => (
-            <View style={focused ? styles.activeIconPill : styles.iconPill}>
-              <MaterialCommunityIcons name="lightning-bolt" size={size + 1} color={color as string} />
-            </View>
+          tabBarIcon: ({ focused, size }) => (
+            <Ionicons
+              name={focused ? 'flash' : 'flash-outline'}
+              size={size || 24}
+              color={focused ? colors.brand.electricBlue : colors.text.muted}
+            />
           ),
           tabBarBadge: alertsCount > 0 ? alertsCount : undefined,
           tabBarBadgeStyle: styles.badge,
         }}
       />
       <Tabs.Screen
+        name="scanner"
+        options={{
+          title: 'Escáner',
+          tabBarIcon: ({ focused, size }) => (
+            <Ionicons
+              name={focused ? 'camera' : 'camera-outline'}
+              size={size || 24}
+              color={focused ? colors.brand.electricBlue : colors.text.muted}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="limits"
         options={{
           title: 'Presupuesto',
-          tabBarIcon: ({ color, focused, size }) => (
-            <View style={focused ? styles.activeIconPill : styles.iconPill}>
-              <Feather name="dollar-sign" size={size} color={color as string} />
-            </View>
+          tabBarIcon: ({ focused, size }) => (
+            <Ionicons
+              name={focused ? 'wallet' : 'wallet-outline'}
+              size={size || 24}
+              color={focused ? colors.brand.electricBlue : colors.text.muted}
+            />
           ),
         }}
       />
@@ -60,10 +88,12 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Ajustes',
-          tabBarIcon: ({ color, focused, size }) => (
-            <View style={focused ? styles.activeIconPill : styles.iconPill}>
-              <Feather name="sliders" size={size} color={color as string} />
-            </View>
+          tabBarIcon: ({ focused, size }) => (
+            <Ionicons
+              name={focused ? 'settings-sharp' : 'settings-outline'}
+              size={size || 24}
+              color={focused ? colors.brand.electricBlue : colors.text.muted}
+            />
           ),
         }}
       />
@@ -73,30 +103,24 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#080E1B',
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#FFFFFF',
+    borderTopColor: colors.border.subtle,
     borderTopWidth: 1,
     paddingTop: 6,
+    elevation: 4,
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  tabIcon: {
+    marginBottom: 0,
   },
   tabLabel: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
     marginTop: 2,
-  },
-  activeIconPill: {
-    backgroundColor: 'rgba(0, 240, 255, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   badge: {
     backgroundColor: colors.status.danger,

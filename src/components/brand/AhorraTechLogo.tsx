@@ -72,12 +72,12 @@ const styles = StyleSheet.create({
   },
   titleWhite: {
     fontWeight: '800',
-    color: colors.text.white,
+    color: colors.text.primary,
     letterSpacing: -0.3,
   },
   titleCyan: {
     fontWeight: '900',
-    color: colors.brand.telemetryCyan,
+    color: colors.brand.electricBlue,
     letterSpacing: -0.3,
   },
   subtitle: {

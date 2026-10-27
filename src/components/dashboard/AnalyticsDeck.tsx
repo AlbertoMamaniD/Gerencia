@@ -1,11 +1,12 @@
 /**
  * AhorraTech - AnalyticsDeck Component
  * Panel interactivo de analíticas eléctricas con conmutador segmentado
- * entre Potencia en Tiempo Real (Watts) e Historial Semanal (Bs).
+ * entre Potencia en Tiempo Real (Watts) e Historial Semanal (Bs),
+ * adaptado responsivamente a cualquier resolución y densidad de pantalla.
  */
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ConsumptionLineChart } from '../charts/ConsumptionLineChart';
 import { WeeklyBarChart } from '../charts/WeeklyBarChart';
@@ -26,14 +27,24 @@ export const AnalyticsDeck: React.FC<AnalyticsDeckProps> = ({
   dailyBudgetBs,
 }) => {
   const [activeTab, setActiveTab] = useState<'live' | 'weekly'>('live');
+  const [deckWidth, setDeckWidth] = useState<number>(0);
 
   const handleTabChange = (tab: 'live' | 'weekly') => {
     Haptics.selectionAsync().catch(() => {});
     setActiveTab(tab);
   };
 
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const { width } = e.nativeEvent.layout;
+    if (width > 0 && Math.abs(width - deckWidth) > 5) {
+      setDeckWidth(width);
+    }
+  };
+
+  const calculatedChartWidth = deckWidth > 64 ? deckWidth - 36 : undefined;
+
   return (
-    <View style={dashboardStyles.analyticsDeckContainer}>
+    <View style={dashboardStyles.analyticsDeckContainer} onLayout={handleLayout}>
       <View style={dashboardStyles.segmentedHeader}>
         <View style={dashboardStyles.segmentedTitleCol}>
           <Text style={dashboardStyles.segmentedTitle}>
@@ -54,7 +65,7 @@ export const AnalyticsDeck: React.FC<AnalyticsDeckProps> = ({
               activeTab === 'live' && dashboardStyles.tabSwitchBtnActive,
             ]}
             onPress={() => handleTabChange('live')}
-            activeOpacity={0.7}
+            activeOpacity={0.88}
           >
             <Text
               style={[
@@ -72,7 +83,7 @@ export const AnalyticsDeck: React.FC<AnalyticsDeckProps> = ({
               activeTab === 'weekly' && dashboardStyles.tabSwitchBtnActive,
             ]}
             onPress={() => handleTabChange('weekly')}
-            activeOpacity={0.7}
+            activeOpacity={0.88}
           >
             <Text
               style={[
@@ -91,11 +102,13 @@ export const AnalyticsDeck: React.FC<AnalyticsDeckProps> = ({
           <ConsumptionLineChart
             data={powerHistory}
             maxPowerThresholdW={maxPowerThresholdW}
+            chartWidth={calculatedChartWidth}
           />
         ) : (
           <WeeklyBarChart
             data={dailyHistory}
             dailyBudgetBs={dailyBudgetBs}
+            chartWidth={calculatedChartWidth}
           />
         )}
       </View>

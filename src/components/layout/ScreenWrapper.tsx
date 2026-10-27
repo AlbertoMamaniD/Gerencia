@@ -36,7 +36,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
 
   return (
     <SafeAreaView style={[styles.safeArea, style]} edges={['top', 'left', 'right']}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

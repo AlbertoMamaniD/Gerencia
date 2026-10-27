@@ -1,7 +1,7 @@
 /**
  * AhorraTech - ConsumptionLineChart Component
  * Gráfico de área en tiempo real (últimas 20 lecturas en Watts del ESP32)
- * con gradiente de alta tecnología y optimización para gama media (sin lag en re-renders).
+ * optimizado para Modo Claro, responsivo y de alto rendimiento.
  */
 
 import React from 'react';
@@ -14,14 +14,18 @@ import { formatPower } from '../../utils/formatters';
 interface ConsumptionLineChartProps {
   data: LivePowerPoint[];
   maxPowerThresholdW: number;
+  chartWidth?: number;
 }
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const DEFAULT_WIDTH = Dimensions.get('window').width - 64;
 
 export const ConsumptionLineChart: React.FC<ConsumptionLineChartProps> = ({
   data,
   maxPowerThresholdW,
+  chartWidth,
 }) => {
+  const actualWidth = chartWidth && chartWidth > 100 ? chartWidth : DEFAULT_WIDTH;
+
   if (!data || data.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -42,14 +46,14 @@ export const ConsumptionLineChart: React.FC<ConsumptionLineChartProps> = ({
   const minPower = Math.min(...powerValues);
 
   const isOverload = currentPower > maxPowerThresholdW && maxPowerThresholdW > 0;
-  const strokeColor = isOverload ? colors.status.danger : colors.brand.telemetryCyan;
+  const strokeColor = isOverload ? colors.status.danger : colors.brand.electricBlue;
 
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.chartTitle}>Potencia en Vivo (Watts)</Text>
-          <Text style={styles.chartSubtitle}>Últimas 20 lecturas continuas</Text>
+          <Text style={styles.chartTitle}>Potencia en Tiempo Real</Text>
+          <Text style={styles.chartSubtitle}>Últimas 20 lecturas continuas (Watts)</Text>
         </View>
         <View style={styles.statsColumn}>
           <Text style={[styles.currentPowerText, { color: strokeColor }]}>
@@ -66,16 +70,16 @@ export const ConsumptionLineChart: React.FC<ConsumptionLineChartProps> = ({
           areaChart
           curved
           data={chartData}
-          height={160}
-          width={SCREEN_WIDTH - 64}
+          height={150}
+          width={actualWidth}
           color={strokeColor}
           thickness={2.5}
           startFillColor={strokeColor}
           endFillColor={colors.background.card}
-          startOpacity={0.35}
-          endOpacity={0.02}
-          initialSpacing={10}
-          endSpacing={10}
+          startOpacity={0.20}
+          endOpacity={0.01}
+          initialSpacing={8}
+          endSpacing={8}
           noOfSections={3}
           maxValue={Math.ceil(maxPower * 1.15)}
           yAxisColor="transparent"
@@ -85,7 +89,7 @@ export const ConsumptionLineChart: React.FC<ConsumptionLineChartProps> = ({
           rulesColor={colors.border.subtle}
           rulesType="dashed"
           hideDataPoints
-          isAnimated={false} // Evitar re-animaciones bruscas en polling cada 2s
+          isAnimated={false}
         />
       </View>
     </View>
@@ -94,10 +98,11 @@ export const ConsumptionLineChart: React.FC<ConsumptionLineChartProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
+    paddingVertical: 4,
+    width: '100%',
   },
   emptyContainer: {
-    height: 160,
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -109,40 +114,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
+    width: '100%',
   },
   chartTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text.primary,
     letterSpacing: -0.2,
   },
   chartSubtitle: {
     fontSize: 11,
     color: colors.text.muted,
-    marginTop: 2,
+    marginTop: 1,
   },
   statsColumn: {
     alignItems: 'flex-end',
   },
   currentPowerText: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: -0.3,
+    fontVariant: ['tabular-nums'],
   },
   minMaxText: {
     fontSize: 10,
     color: colors.text.muted,
     marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
   chartWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
     overflow: 'hidden',
   },
   axisText: {
     color: colors.text.muted,
     fontSize: 9,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
