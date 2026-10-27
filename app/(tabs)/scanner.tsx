@@ -50,21 +50,7 @@ export default function ScannerScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo procesar la imagen.';
-      Alert.alert('Reconocimiento Óptico', msg, [
-        { text: 'Entendido', style: 'cancel' },
-        {
-          text: 'Calibrar con Foto',
-          onPress: () => {
-            setScanResult({
-              detectedKWh: Number(currentEnergy.toFixed(2)),
-              meterSerial: 'MED-BO-042891',
-              confidence: 99.0,
-              provider: 'demo_sample',
-              durationMs: 0,
-            });
-          },
-        },
-      ]);
+      Alert.alert('Reconocimiento Óptico', msg);
     } finally {
       setIsScanning(false);
     }
@@ -73,11 +59,11 @@ export default function ScannerScreen() {
   const handleTakePhoto = async () => {
     const { granted } = await ImagePicker.requestCameraPermissionsAsync();
     if (!granted) return Alert.alert('Permiso', 'Se necesita acceso a la cámara.');
-    const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8, base64: true, aspect: [4, 3] });
+    const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.6, base64: true, aspect: [4, 3] });
     if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri, res.assets[0].base64 || undefined);
   };
   const handlePickGallery = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8, base64: true });
+    const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.6, base64: true });
     if (!res.canceled && res.assets[0]?.uri) runOcrAnalysis(res.assets[0].uri, res.assets[0].base64 || undefined);
   };
 

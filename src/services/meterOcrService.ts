@@ -20,10 +20,10 @@ export interface OcrRequestOptions {
   timeoutMs?: number;
 }
 
-const DEFAULT_TIMEOUT_MS = 14000;
+const DEFAULT_TIMEOUT_MS = 20000;
 const DEFAULT_GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 
-const CANDIDATE_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-3.8-flash'];
+const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest'];
 
 /**
  * Procesa la imagen del medidor usando Google Gemini Vision AI.
@@ -58,10 +58,10 @@ export async function processMeterImage(
               {
                 parts: [
                   {
-                    text: `Eres un clasificador y lector óptico de medidores eléctricos residenciales de Bolivia (CRE, DELAPAZ, ELFEC).
+                    text: `Eres un clasificador y lector óptico estricto de medidores eléctricos residenciales de Bolivia (CRE, DELAPAZ, ELFEC).
 Analiza estrictamente la imagen:
-1. ¿Es la fotografía de un medidor de energía eléctrica (sea analógico de disco o digital LCD)?
-- Si NO es un medidor eléctrico (por ejemplo: si es una persona, un pie, un animal, pantalla de computadora, código de programación o una pared), responde ÚNICAMENTE con este JSON:
+1. ¿Es la fotografía de un medidor de energía eléctrica real (sea analógico de disco o digital LCD)?
+- Si NO es un medidor eléctrico (por ejemplo: si es una persona, un pie, una media, ropa, calzado, pantalla de computadora, código de programación, fondo negro o una pared), responde ÚNICAMENTE con este JSON:
 {"is_meter": false, "error": "No se detectó un medidor eléctrico en la imagen. Por favor enfoca el display de tu medidor de luz."}
 
 2. Si SÍ es un medidor eléctrico:
