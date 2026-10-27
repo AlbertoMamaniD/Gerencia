@@ -1,0 +1,208 @@
+/**
+ * AhorraTech - Meter Scanner & OCR Styles
+ * Hoja de estilos desacoplada para el escáner fotográfico de medidores eléctricos.
+ */
+
+import { StyleSheet, Dimensions } from 'react-native';
+import { colors } from '../theme/colors';
+
+const { width } = Dimensions.get('window');
+
+export const scannerStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(7, 11, 20, 0.95)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderColor: colors.border.highlight,
+    maxHeight: '92%',
+    paddingBottom: 24,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  titleCol: {
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.text.white,
+    letterSpacing: -0.3,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.background.subtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bodyScroll: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+  },
+  viewfinderBox: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: '#04070D',
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  viewfinderPlaceholder: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  placeholderText: {
+    color: colors.text.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 18,
+  },
+  laserLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: colors.brand.telemetryCyan,
+    shadowColor: colors.brand.telemetryCyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  cornerTopLeft: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 22,
+    height: 22,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderColor: colors.brand.telemetryCyan,
+  },
+  cornerTopRight: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 22,
+    height: 22,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderColor: colors.brand.telemetryCyan,
+  },
+  cornerBottomLeft: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    width: 22,
+    height: 22,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderColor: colors.brand.telemetryCyan,
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    width: 22,
+    height: 22,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderColor: colors.brand.telemetryCyan,
+  },
+  detectionCard: {
+    backgroundColor: colors.background.subtle,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+    padding: 14,
+    marginTop: 14,
+  },
+  detectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.brand.telemetryCyan,
+    letterSpacing: 0.5,
+  },
+  mainKWhRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginVertical: 4,
+  },
+  kwhNumber: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: colors.text.white,
+    letterSpacing: -0.5,
+  },
+  costText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.brand.telemetryCyan,
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+  },
+  metaLabel: {
+    fontSize: 10,
+    color: colors.text.muted,
+  },
+  metaVal: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginTop: 1,
+  },
+  buttonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  actionBtnHalf: {
+    flex: 1,
+  },
+  syncBtn: {
+    marginTop: 10,
+  },
+});
