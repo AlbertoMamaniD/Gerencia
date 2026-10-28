@@ -74,6 +74,30 @@ export const settingsStyles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 8,
   },
+  cloudStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.subtle,
+  },
+  cloudStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cloudStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  cloudEndpointText: {
+    fontSize: 10,
+    color: colors.text.muted,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginTop: 2,
+  },
   actionBtn: {
     marginVertical: 4,
   },

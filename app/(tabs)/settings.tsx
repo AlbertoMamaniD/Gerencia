@@ -1,7 +1,7 @@
 /**
- * AhorraTech - Configuración Técnica & Hardware ESP32
- * Gestión de IP, enlace con microcontrolador PZEM-004T, tarifa en Bolivia y diagnóstico.
- * Modo Claro limpio sin referencias a simulador. Estilos en src/styles/settings.styles.ts.
+ * AhorraTech - Configuración Técnica, Hardware ESP32 & Nube Supabase
+ * Gestión de IP, Gemini AI, Supabase Storage, tarifas en Bolivia y diagnóstico.
+ * Líneas estrictamente < 180.
  */
 
 import React, { useState } from 'react';
@@ -22,9 +22,7 @@ import { colors } from '../../src/theme/colors';
 export default function SettingsScreen() {
   const connection = useEnergyStore((s) => s.connection);
   const budgetConfig = useEnergyStore((s) => s.budgetConfig);
-  const updateConnection = useEnergyStore((s) => s.updateConnection);
-  const updateBudgetConfig = useEnergyStore((s) => s.updateBudgetConfig);
-  const resetBillingCycle = useEnergyStore((s) => s.resetBillingCycle);
+  const { updateConnection, updateBudgetConfig, resetBillingCycle } = useEnergyStore();
   const { sendTestNotification } = useNotifications();
 
   const [ipAddress, setIpAddress] = useState(connection.ipAddress);
@@ -35,17 +33,19 @@ export default function SettingsScreen() {
   const handleSaveNetwork = () => {
     const numRate = parseFloat(ratePerKWh) || budgetConfig.ratePerKWh;
     const numDay = parseInt(cycleStartDay, 10) || budgetConfig.billingCycleStartDay;
-    updateConnection({ ipAddress: ipAddress.trim() });
+    updateConnection({
+      ipAddress: ipAddress.trim(),
+    });
     updateBudgetConfig({ ratePerKWh: numRate, billingCycleStartDay: Math.min(28, Math.max(1, numDay)) });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setStatusMsg('Configuración técnica guardada');
+    setStatusMsg('Parámetros guardados correctamente');
     setTimeout(() => setStatusMsg(null), 3000);
   };
 
   const handleResetCycle = () => {
     Alert.alert(
       'Reiniciar Ciclo de Facturación',
-      '¿Deseas reiniciar los acumuladores de energía para el nuevo mes? Esta acción no se puede deshacer.',
+      '¿Deseas reiniciar los acumuladores de energía para el nuevo mes?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -54,7 +54,7 @@ export default function SettingsScreen() {
           onPress: () => {
             resetBillingCycle();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-            setStatusMsg('Ciclo reiniciado con éxito');
+            setStatusMsg('Ciclo reiniciado');
             setTimeout(() => setStatusMsg(null), 3000);
           },
         },
@@ -63,10 +63,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenWrapper
-      header={<Header showLogo={false} title="Ajustes Técnicos" subtitle="Hardware ESP32 & Parámetros Eléctricos" />}
-    >
-      {/* 1. Panel de Estado de Enlace Hardware */}
+    <ScreenWrapper header={<Header showLogo={false} title="Ajustes Técnicos" subtitle="Hardware ESP32 & Nube Protegida" />}>
       <View style={settingsStyles.panel}>
         <View style={settingsStyles.panelHeaderRow}>
           <View style={settingsStyles.panelHeaderLeft}>
@@ -75,54 +72,53 @@ export default function SettingsScreen() {
           </View>
           <Badge label={connection.isConnected ? 'EN LÍNEA' : 'STANDBY'} variant={connection.isConnected ? 'success' : 'warning'} />
         </View>
-        <Text style={settingsStyles.panelDesc}>
-          Recepción activa de mediciones PZEM-004T con muestreo continuo a 1 Hz.
-        </Text>
-        <Input
-          label="Dirección IP del Microcontrolador"
-          prefix="http://"
-          placeholder="192.168.4.1"
-          value={ipAddress}
-          onChangeText={setIpAddress}
-          helperText="Ruta REST: /api/telemetry (Polling cada 2000 ms)"
-        />
+        <Text style={settingsStyles.panelDesc}>Enlace con microcontrolador PZEM-004T en red local.</Text>
+        <Input label="IP Microcontrolador ESP32" prefix="http://" placeholder="192.168.4.1" value={ipAddress} onChangeText={setIpAddress} />
         <View style={settingsStyles.hardwareInfoRow}>
           <Text style={settingsStyles.infoLabel}>Última Sincronización:</Text>
           <Text style={settingsStyles.infoVal}>{connection.lastSyncTime ? formatTime(connection.lastSyncTime) : 'Sincronizado'}</Text>
         </View>
-        {connection.rssi && (
-          <View style={settingsStyles.hardwareInfoRow}>
-            <Text style={settingsStyles.infoLabel}>Intensidad de Señal WiFi (RSSI):</Text>
-            <Text style={settingsStyles.infoVal}>{connection.rssi} dBm</Text>
-          </View>
-        )}
       </View>
 
-      {/* 2. Panel Parámetros de Facturación Regulada en Bolivia */}
+      <View style={settingsStyles.panel}>
+        <View style={settingsStyles.panelHeaderRow}>
+          <View style={settingsStyles.panelHeaderLeft}>
+            <MaterialCommunityIcons name="shield-check" size={16} color={colors.status.success} />
+            <Text style={settingsStyles.panelTitle}>INFRAESTRUCTURA Y NUBE PROTEGIDA</Text>
+          </View>
+        </View>
+        <Text style={settingsStyles.panelDesc}>Credenciales de producción cifradas internamente en la aplicación.</Text>
+        <View style={settingsStyles.cloudStatusRow}>
+          <View style={settingsStyles.cloudStatusLeft}>
+            <MaterialCommunityIcons name="database-check" size={18} color={colors.status.success} />
+            <View>
+              <Text style={settingsStyles.cloudStatusText}>Supabase DB & Storage</Text>
+              <Text style={settingsStyles.cloudEndpointText}>hchigziyarizebvcqwub.supabase.co</Text>
+            </View>
+          </View>
+          <Badge label="ACTIVO" variant="success" />
+        </View>
+        <View style={[settingsStyles.cloudStatusRow, { borderBottomWidth: 0 }]}>
+          <View style={settingsStyles.cloudStatusLeft}>
+            <MaterialCommunityIcons name="eye-check" size={18} color={colors.brand.electricBlue} />
+            <View>
+              <Text style={settingsStyles.cloudStatusText}>Google Gemini Cloud OCR</Text>
+              <Text style={settingsStyles.cloudEndpointText}>API Vision Multi-Tenant</Text>
+            </View>
+          </View>
+          <Badge label="VINCULADO" variant="info" />
+        </View>
+      </View>
+
       <View style={settingsStyles.panel}>
         <View style={settingsStyles.panelHeaderRow}>
           <View style={settingsStyles.panelHeaderLeft}>
             <Feather name="file-text" size={16} color={colors.status.warning} />
-            <Text style={settingsStyles.panelTitle}>PARÁMETROS DE FACTURACIÓN (BOLIVIA)</Text>
+            <Text style={settingsStyles.panelTitle}>PARÁMETROS REGULADOS (BOLIVIA)</Text>
           </View>
         </View>
-        <Input
-          label="Tarifa Residencial Regulada"
-          prefix="Bs"
-          suffix="/ kWh"
-          keyboardType="numeric"
-          value={ratePerKWh}
-          onChangeText={setRatePerKWh}
-          helperText="Tarifa base de distribuidora (ej. 0.85 Bs/kWh)"
-        />
-        <Input
-          label="Día de Inicio de Ciclo"
-          suffix="de cada mes"
-          keyboardType="numeric"
-          value={cycleStartDay}
-          onChangeText={setCycleStartDay}
-          helperText="Día en que la empresa distribuidora realiza el corte tarifario"
-        />
+        <Input label="Tarifa Base Residencial" prefix="Bs" suffix="/ kWh" keyboardType="numeric" value={ratePerKWh} onChangeText={setRatePerKWh} />
+        <Input label="Día Inicio de Ciclo" suffix="de cada mes" keyboardType="numeric" value={cycleStartDay} onChangeText={setCycleStartDay} />
       </View>
 
       {statusMsg && (

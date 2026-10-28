@@ -28,26 +28,29 @@
 
 ---
 
-## 🚀 Instalación y Puesta en Marcha
+## 🚀 Puesta en Marcha y Compilación de APK
 
-### Prerrequisitos
-- Node.js >= 18
-- Dispositivo móvil con **Expo Go** o emulador Android/iOS
+> 📖 **Para ver la guía completa paso a paso con solución de errores y diagramas, consulta [COMO_HACER_CORRER_Y_COMPILAR.md](./COMO_HACER_CORRER_Y_COMPILAR.md).**
 
-### Pasos
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/AlbertoMamaniD/Gerencia.git
-cd Gerencia
+### 1. Correr en el celular (Expo Go)
+```powershell
+# En red Wi-Fi local (recomendado):
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.0.11"; npx expo start --lan -c
 
-# 2. Instalar dependencias compatibles con Expo SDK 58
-npm install
-
-# 3. Iniciar el servidor de desarrollo Expo
-npx expo start
+# O con túnel Ngrok (cualquier red o datos móviles):
+npx expo start --tunnel ngrok -c
 ```
+Escanea el código QR desde la app **Expo Go** en Android.
 
-Escanea el código QR desde la app **Expo Go** en tu dispositivo móvil.
+### 2. Generar el APK Independiente (Instalador Android)
+```powershell
+# 1. Iniciar sesión en Expo (gratis)
+npx eas-cli@latest login
+
+# 2. Compilar APK en la nube
+npx eas-cli@latest build -p android --profile preview
+```
+Al finalizar la compilación en EAS, descarga el `.apk` desde el enlace o código QR generado.
 
 ---
 
