@@ -1,11 +1,10 @@
-import { alertsEqual, evaluateAlertConditions, reconcileAlerts } from '../alerts';
+import { alertsEqual, evaluateAlertConditions, reconcileAlerts, shouldNotifyAlert } from '../alerts';
 
 const base = {
   powerW: 500,
   maxPowerW: 3500,
   consumedPct: 10,
   warningThresholdPct: 80,
-  currentCostBs: 18,
   monthlyBudgetBs: 180,
 };
 
@@ -18,7 +17,16 @@ describe('evaluateAlertConditions', () => {
     const [alert] = evaluateAlertConditions({ ...base, powerW: 4000 });
     expect(alert.type).toBe('overload');
     expect(alert.severity).toBe('critical');
-    expect(alert.message).toContain('4,00');
+    expect(alert.message).toContain('3,50');
+  });
+
+  it('el mensaje no cambia con cada lectura (no satura al lector de pantalla)', () => {
+    const a = evaluateAlertConditions({ ...base, powerW: 3610 })[0].message;
+    const b = evaluateAlertConditions({ ...base, powerW: 3640 })[0].message;
+    expect(a).toBe(b);
+    const w1 = evaluateAlertConditions({ ...base, consumedPct: 81 })[0].message;
+    const w2 = evaluateAlertConditions({ ...base, consumedPct: 95 })[0].message;
+    expect(w1).toBe(w2);
   });
 
   it('advertencia y excedido son excluyentes', () => {
@@ -70,5 +78,24 @@ describe('reconcileAlerts', () => {
     expect(alertsEqual(a, a)).toBe(true);
     expect(alertsEqual(a, [])).toBe(false);
     expect(alertsEqual(a, [{ ...a[0], message: 'otro' }])).toBe(false);
+  });
+});
+
+describe('shouldNotifyAlert', () => {
+  const overload = { id: 'o', type: 'overload' as const, title: '', message: '', severity: 'critical' as const, timestamp: 10_000 };
+  const budget = { ...overload, id: 'b', type: 'budget_warning' as const, severity: 'warning' as const };
+
+  it('primera vez siempre notifica', () => {
+    expect(shouldNotifyAlert(overload, undefined, '2026-10-01', 1000)).toBe(true);
+  });
+
+  it('sobrecarga respeta la espera', () => {
+    expect(shouldNotifyAlert(overload, { at: 9_500, cycleKey: null }, null, 1000)).toBe(false);
+    expect(shouldNotifyAlert(overload, { at: 9_000, cycleKey: null }, null, 1000)).toBe(true);
+  });
+
+  it('presupuesto: una sola vez por ciclo', () => {
+    expect(shouldNotifyAlert(budget, { at: 0, cycleKey: '2026-10-01' }, '2026-10-01', 1000)).toBe(false);
+    expect(shouldNotifyAlert(budget, { at: 0, cycleKey: '2026-10-01' }, '2026-11-01', 1000)).toBe(true);
   });
 });

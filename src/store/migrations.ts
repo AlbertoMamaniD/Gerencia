@@ -3,7 +3,7 @@
  * para que los usuarios conserven su presupuesto, IP y calibraciones.
  */
 
-import { BudgetConfig, ConnectionConfig, MeterCaptureRecord } from '@/domain/types';
+import { AlertType, BudgetConfig, ConnectionConfig, MeterCaptureRecord } from '@/domain/types';
 import { createDemoDaily, MeterLedger } from '@/domain/meter';
 import { SIMULATION_START_KWH } from '@/services/telemetry/simulator';
 import type { ThemePreference } from '@/theme/ThemeProvider';
@@ -16,9 +16,20 @@ export interface PersistedState {
   themePreference: ThemePreference;
   /** El libro contiene datos de demostración del modo simulación. */
   hasDemoData: boolean;
+  /** Fecha (YYYY-MM-DD) de inicio del ciclo vigente; al cambiar, el ciclo se reinicia solo. */
+  cycleKey: string | null;
+  /** Alertas que el usuario cerró (se recuerdan entre aperturas de la app). */
+  dismissedAlertTypes: AlertType[];
+  /** Última notificación enviada por tipo, para no repetirla en cada apertura. */
+  alertNotifications: Partial<Record<AlertType, AlertNotificationRecord>>;
 }
 
-export const STORE_VERSION = 3;
+export interface AlertNotificationRecord {
+  at: number;
+  cycleKey: string | null;
+}
+
+export const STORE_VERSION = 4;
 export const MAX_CAPTURES = 50;
 
 export const DEFAULT_BUDGET: BudgetConfig = {
@@ -48,6 +59,9 @@ export function createInitialPersistedState(now: Date = new Date()): PersistedSt
     captures: [],
     themePreference: 'system',
     hasDemoData: true,
+    cycleKey: null,
+    dismissedAlertTypes: [],
+    alertNotifications: {},
   };
 }
 
@@ -80,7 +94,8 @@ export function migratePersistedState(persisted: unknown, version: number, now: 
   if (!persisted || typeof persisted !== 'object') return base;
   const old = persisted as Record<string, unknown>;
 
-  if (version >= STORE_VERSION) {
+  // v3 tiene el mismo formato; v4 solo agrega campos con valores por defecto.
+  if (version >= 3) {
     return { ...base, ...(old as Partial<PersistedState>) };
   }
 

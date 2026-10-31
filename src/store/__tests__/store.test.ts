@@ -169,3 +169,63 @@ describe('migratePersistedState', () => {
     expect(s.budget).toEqual(DEFAULT_BUDGET);
   });
 });
+
+describe('correcciones de la revisión de bugs', () => {
+  const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime();
+
+  it('el ciclo se reinicia solo al empezar el siguiente mes', () => {
+    const store = useEnergyStore.getState();
+    store.refreshAlerts(at(2026, 10, 20));
+    store.ingestReading(reading(1, 500, at(2026, 10, 20)));
+    store.ingestReading(reading(151, 500, at(2026, 10, 30)));
+    const before = useEnergyStore.getState().ledger;
+    expect(before.meterKWh - before.cycleStartKWh).toBeGreaterThan(150);
+
+    useEnergyStore.getState().refreshAlerts(at(2026, 11, 1));
+    const s = useEnergyStore.getState();
+    expect(s.cycleKey).toBe('2026-11-01');
+    expect(s.ledger.meterKWh - s.ledger.cycleStartKWh).toBe(0);
+    expect(s.ledger.meterKWh).toBe(before.meterKWh); // la lectura del medidor no cambia
+  });
+
+  it('cambiar el día de inicio no borra el consumo medido', () => {
+    const store = useEnergyStore.getState();
+    store.refreshAlerts();
+    const consumed = useEnergyStore.getState().ledger.meterKWh - useEnergyStore.getState().ledger.cycleStartKWh;
+    store.updateBudget({ billingCycleStartDay: 15 });
+    const s = useEnergyStore.getState();
+    expect(s.ledger.meterKWh - s.ledger.cycleStartKWh).toBe(consumed);
+    expect(s.budget.billingCycleStartDay).toBe(15);
+  });
+
+  it('si el ESP32 deja de responder, la potencia vieja deja de mostrarse y la sobrecarga se retira', () => {
+    const t = Date.now();
+    const store = useEnergyStore.getState();
+    store.ingestReading(reading(1, 5000, t));
+    expect(useEnergyStore.getState().alerts.map((a) => a.type)).toContain('overload');
+
+    store.reportConnectionError('sin red', t + 2000); // fallo puntual: se conserva
+    expect(useEnergyStore.getState().liveReading).not.toBeNull();
+
+    store.reportConnectionError('sin red', t + 20_000); // datos viejos
+    const s = useEnergyStore.getState();
+    expect(s.liveReading).toBeNull();
+    expect(s.alerts.map((a) => a.type)).not.toContain('overload');
+  });
+
+  it('las alertas cerradas y las notificaciones enviadas se guardan en disco', async () => {
+    const store = useEnergyStore.getState();
+    store.ingestReading(reading(1, 5000));
+    store.dismissAlert(useEnergyStore.getState().alerts[0].id);
+    store.markAlertNotified('budget_warning', 123);
+    await flushStorage();
+    const saved = JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) ?? '{}').state;
+    expect(saved.dismissedAlertTypes).toEqual(['overload']);
+    expect(saved.alertNotifications.budget_warning).toMatchObject({ at: 123 });
+  });
+
+  it('migra datos v3 agregando los campos nuevos', () => {
+    const s = migratePersistedState({ themePreference: 'dark', budget: DEFAULT_BUDGET }, 3);
+    expect(s).toMatchObject({ themePreference: 'dark', cycleKey: null, dismissedAlertTypes: [], alertNotifications: {} });
+  });
+});

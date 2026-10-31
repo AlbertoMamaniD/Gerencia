@@ -3,7 +3,7 @@
  * (lectura de telemetría y notificaciones de alertas).
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,6 +11,7 @@ import * as SystemUI from 'expo-system-ui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { useAlertNotifications } from '@/hooks/useAlertNotifications';
+import { useDayRollover } from '@/hooks/useDayRollover';
 import { useTelemetryPolling } from '@/hooks/useTelemetryPolling';
 import { configureNotifications } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
@@ -22,12 +23,15 @@ export { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 
 function GlobalServices() {
   const { colors } = useTheme();
+  // Color fijado al montar: cambiar de tema no debe volver a pedir el permiso de notificaciones.
+  const [accentColor] = useState(colors.primary);
   useTelemetryPolling();
   useAlertNotifications();
+  useDayRollover();
 
   useEffect(() => {
-    void configureNotifications(colors.primary);
-  }, [colors.primary]);
+    void configureNotifications(accentColor);
+  }, [accentColor]);
 
   return null;
 }

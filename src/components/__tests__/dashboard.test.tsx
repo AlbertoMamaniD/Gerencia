@@ -59,6 +59,19 @@ describe('TelemetryGrid', () => {
     expect(screen.getByText('12.345,6 kWh')).toBeOnTheScreen();
   });
 
+  it('campos que el firmware no envía se muestran como "Sin dato" (no como 0 o "Bajo")', async () => {
+    await renderWithProviders(
+      <TelemetryGrid
+        reading={{ voltage: 221, current: 1, power: 220, energy: 1, frequency: 0, powerFactor: 0, timestamp: 0 }}
+        meterKWh={1}
+        cycleKWh={1}
+        lastSyncTime={Date.now()}
+      />
+    );
+    expect(screen.queryByText('Bajo (carga inductiva)')).toBeNull();
+    expect(screen.getAllByText('Sin dato')).toHaveLength(2);
+  });
+
   it('sin lectura usa guiones', async () => {
     await renderWithProviders(<TelemetryGrid reading={null} meterKWh={0} cycleKWh={0} lastSyncTime={null} />);
     expect(screen.getByText('Sin lecturas todavía')).toBeOnTheScreen();

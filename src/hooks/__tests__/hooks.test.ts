@@ -5,6 +5,8 @@ import { createInitialPersistedState } from '@/store/migrations';
 import { initialRuntimeState, useEnergyStore } from '@/store/useEnergyStore';
 import { fetchEsp32Reading } from '@/services/telemetry/esp32Client';
 import { useAlertNotifications } from '../useAlertNotifications';
+import { useDayRollover } from '../useDayRollover';
+import { useMeterScan } from '../useMeterScan';
 import { useTelemetryPolling } from '../useTelemetryPolling';
 
 jest.mock('@/services/telemetry/esp32Client', () => ({
@@ -110,5 +112,55 @@ describe('useAlertNotifications', () => {
     await power(300, 70_000);
     await power(5000, 80_000); // pasada la espera: se notifica otra vez
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('useAlertNotifications al reabrir la app', () => {
+  it('el aviso de presupuesto no se repite en cada apertura dentro del mismo ciclo', async () => {
+    useEnergyStore.getState().refreshAlerts();
+    const first = await renderHook(() => useAlertNotifications());
+    await act(async () => useEnergyStore.getState().updateBudget({ monthlyBudgetBs: 10 }));
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    await first.unmount();
+
+    // Simula un reinicio: se pierden las alertas en memoria, se conserva lo guardado.
+    useEnergyStore.setState({ alerts: [] });
+    await renderHook(() => useAlertNotifications());
+    await act(async () => useEnergyStore.getState().refreshAlerts());
+    expect(useEnergyStore.getState().alerts.length).toBeGreaterThan(0);
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useDayRollover', () => {
+  it('actualiza "hoy" al pasar la medianoche aunque no lleguen lecturas', async () => {
+    useEnergyStore.setState({ today: '2000-01-01' });
+    await renderHook(() => useDayRollover());
+    await act(async () => {
+      jest.advanceTimersByTime(60_000);
+    });
+    expect(useEnergyStore.getState().today).not.toBe('2000-01-01');
+  });
+
+  it('también revisa al volver a la app', async () => {
+    await renderHook(() => useDayRollover());
+    useEnergyStore.setState({ today: '2000-01-01' });
+    await act(async () => appStateListener?.('active'));
+    expect(useEnergyStore.getState().today).not.toBe('2000-01-01');
+  });
+});
+
+describe('useMeterScan', () => {
+  it('confirmar dos veces seguidas calibra y guarda una sola vez', async () => {
+    const { result } = await renderHook(() => useMeterScan());
+    await act(async () => result.current.startManualEntry());
+    await act(async () => {
+      const first = result.current.confirm(500);
+      const second = result.current.confirm(500);
+      await Promise.all([first, second]);
+    });
+    expect(useEnergyStore.getState().captures).toHaveLength(1);
+    expect(useEnergyStore.getState().ledger.meterKWh).toBe(500);
+    expect(result.current.state.feedback?.title).toBe('Medidor calibrado');
   });
 });

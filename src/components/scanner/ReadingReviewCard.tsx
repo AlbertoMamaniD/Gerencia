@@ -30,6 +30,7 @@ export function ReadingReviewCard({ result, currentMeterKWh, ratePerKWh, saving,
   const lowConfidence = result?.confidence !== null && result?.confidence !== undefined && result.confidence < LOW_CONFIDENCE_PCT;
 
   const handleConfirm = () => {
+    if (saving) return;
     setTouched(true);
     if (value !== null) onConfirm(value);
   };
@@ -64,6 +65,7 @@ export function ReadingReviewCard({ result, currentMeterKWh, ratePerKWh, saving,
         onChangeText={setText}
         onBlur={() => setTouched(true)}
         returnKeyType="done"
+        editable={!saving}
         onSubmitEditing={handleConfirm}
         error={touched && !validation.ok ? validation.error : null}
         testID="reading-input"

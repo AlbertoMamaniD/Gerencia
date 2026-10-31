@@ -4,7 +4,7 @@
  * mientras la condición siga vigente.
  */
 
-import { formatCurrency, formatPercentage, formatPower } from '@/utils/formatters';
+import { formatCurrency, formatPower } from '@/utils/formatters';
 import { ActiveAlert, AlertSeverity, AlertType } from './types';
 
 export interface AlertConditionInput {
@@ -12,7 +12,6 @@ export interface AlertConditionInput {
   maxPowerW: number;
   consumedPct: number;
   warningThresholdPct: number;
-  currentCostBs: number;
   monthlyBudgetBs: number;
 }
 
@@ -31,7 +30,8 @@ export function evaluateAlertConditions(input: AlertConditionInput): AlertCondit
       type: 'overload',
       severity: 'critical',
       title: 'Sobrecarga eléctrica',
-      message: `La potencia actual (${formatPower(input.powerW)}) supera tu límite de ${formatPower(input.maxPowerW)}. Desconecta algún equipo para evitar que salte la térmica.`,
+      // Sin valores en vivo: el texto no cambia cada 2 s (los lectores de pantalla no lo repiten).
+      message: `La potencia superó tu límite de ${formatPower(input.maxPowerW)}. Desconecta algún equipo para evitar que salte la térmica.`,
     });
   }
 
@@ -41,14 +41,14 @@ export function evaluateAlertConditions(input: AlertConditionInput): AlertCondit
         type: 'budget_exceeded',
         severity: 'critical',
         title: 'Presupuesto agotado',
-        message: `Llevas ${formatCurrency(input.currentCostBs)} de un presupuesto de ${formatCurrency(input.monthlyBudgetBs)}.`,
+        message: `Superaste tu presupuesto de ${formatCurrency(input.monthlyBudgetBs)} para este ciclo.`,
       });
     } else if (input.consumedPct >= input.warningThresholdPct) {
       conditions.push({
         type: 'budget_warning',
         severity: 'warning',
         title: 'Cerca de tu límite',
-        message: `Ya usaste el ${formatPercentage(input.consumedPct)} de tu presupuesto (${formatCurrency(input.currentCostBs)} de ${formatCurrency(input.monthlyBudgetBs)}).`,
+        message: `Ya usaste más del ${input.warningThresholdPct}% de tu presupuesto de ${formatCurrency(input.monthlyBudgetBs)}.`,
       });
     }
   }
@@ -95,4 +95,25 @@ export function reconcileAlerts(
 export function alertsEqual(a: ActiveAlert[], b: ActiveAlert[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((alert, i) => alert.id === b[i].id && alert.message === b[i].message);
+}
+
+export interface NotificationRecord {
+  at: number;
+  cycleKey: string | null;
+}
+
+/**
+ * Decide si una alerta nueva merece notificación del sistema:
+ * - sobrecarga: como máximo una vez cada `overloadCooldownMs`;
+ * - presupuesto: una sola vez por ciclo de facturación.
+ */
+export function shouldNotifyAlert(
+  alert: ActiveAlert,
+  last: NotificationRecord | undefined,
+  cycleKey: string | null,
+  overloadCooldownMs: number
+): boolean {
+  if (!last) return true;
+  if (alert.type === 'overload') return alert.timestamp - last.at >= overloadCooldownMs;
+  return last.cycleKey !== cycleKey;
 }

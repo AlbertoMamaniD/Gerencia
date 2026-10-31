@@ -17,7 +17,7 @@ export function Screen({ children, header, footer, refreshControl, testID }: Scr
   const styles = useStyles();
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']} testID={testID}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.content}

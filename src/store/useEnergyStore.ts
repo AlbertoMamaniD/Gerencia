@@ -8,7 +8,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { alertsEqual, evaluateAlertConditions, reconcileAlerts } from '@/domain/alerts';
-import { calculateFinancialProjection } from '@/domain/billing';
+import { calculateFinancialProjection, getBillingCycle } from '@/domain/billing';
 import {
   applySensorReading,
   calibrateLedger,
@@ -16,6 +16,7 @@ import {
   detachSensor,
   getCycleEnergyKWh,
   resetLedgerCycle,
+  toLocalDateKey,
 } from '@/domain/meter';
 import {
   ActiveAlert,
@@ -38,6 +39,8 @@ import {
 import { flushStorage, throttledStorage } from './throttledStorage';
 
 export const POWER_HISTORY_SIZE = 30;
+/** Sin lecturas nuevas por más de este tiempo, la potencia mostrada deja de considerarse vigente. */
+export const STALE_READING_MS = 10_000;
 export const STORAGE_KEY = 'ahorratech-storage-v2';
 
 interface RuntimeState {
@@ -45,13 +48,14 @@ interface RuntimeState {
   powerHistory: LivePowerPoint[];
   status: ConnectionStatus;
   alerts: ActiveAlert[];
-  dismissedAlertTypes: AlertType[];
+  /** Fecha local (YYYY-MM-DD) de la última evaluación; cambia a medianoche. */
+  today: string;
   hasHydrated: boolean;
 }
 
 interface Actions {
   ingestReading: (reading: PZEMReading) => void;
-  reportConnectionError: (message: string) => void;
+  reportConnectionError: (message: string, now?: number) => void;
   updateBudget: (changes: Partial<BudgetConfig>) => void;
   updateConnection: (changes: Partial<ConnectionConfig>) => void;
   setThemePreference: (preference: ThemePreference) => void;
@@ -60,6 +64,7 @@ interface Actions {
   dismissAlert: (id: string) => void;
   resetCycle: () => void;
   refreshAlerts: (now?: number) => void;
+  markAlertNotified: (type: AlertType, at: number) => void;
 }
 
 export type EnergyState = PersistedState & RuntimeState & Actions;
@@ -69,32 +74,58 @@ export const initialRuntimeState: RuntimeState = {
   powerHistory: [],
   status: { isConnected: false, lastSyncTime: null, errorMessage: null },
   alerts: [],
-  dismissedAlertTypes: [],
+  today: toLocalDateKey(new Date()),
   hasHydrated: false,
 };
 
-/** Recalcula las alertas a partir del estado (presupuesto + potencia). */
-function computeAlerts(state: EnergyState, now: number): Pick<RuntimeState, 'alerts' | 'dismissedAlertTypes'> {
+type Evaluation = Pick<EnergyState, 'ledger' | 'cycleKey' | 'alerts' | 'dismissedAlertTypes' | 'today'>;
+
+/**
+ * Evalúa el estado en el instante `now`:
+ * 1. Si empezó un nuevo ciclo de facturación, reinicia el consumo del ciclo automáticamente.
+ * 2. Recalcula las alertas de sobrecarga y presupuesto.
+ */
+function evaluate(state: EnergyState, now: number): Evaluation {
+  const date = new Date(now);
+  const cycleKey = toLocalDateKey(getBillingCycle(date, state.budget.billingCycleStartDay).start);
+
+  let ledger = state.ledger;
+  let dismissed = state.dismissedAlertTypes;
+  let currentKey = state.cycleKey;
+  if (currentKey === null) {
+    currentKey = cycleKey;
+  } else if (cycleKey > currentKey) {
+    ledger = resetLedgerCycle(ledger);
+    dismissed = [];
+    currentKey = cycleKey;
+  }
+
   const projection = calculateFinancialProjection({
-    cycleEnergyKWh: getCycleEnergyKWh(state.ledger),
+    cycleEnergyKWh: getCycleEnergyKWh(ledger),
     ratePerKWh: state.budget.ratePerKWh,
     monthlyBudgetBs: state.budget.monthlyBudgetBs,
     cycleStartDay: state.budget.billingCycleStartDay,
     warningThresholdPct: state.budget.warningThresholdPct,
-    referenceDate: new Date(now),
+    referenceDate: date,
   });
   const conditions = evaluateAlertConditions({
     powerW: state.liveReading?.power ?? 0,
     maxPowerW: state.budget.maxPowerThresholdW,
     consumedPct: projection.budgetConsumedPct,
     warningThresholdPct: state.budget.warningThresholdPct,
-    currentCostBs: projection.currentCostBs,
     monthlyBudgetBs: state.budget.monthlyBudgetBs,
   });
-  const result = reconcileAlerts(state.alerts, conditions, state.dismissedAlertTypes, now);
+  const result = reconcileAlerts(state.alerts, conditions, dismissed, now);
+  const sameDismissed =
+    result.dismissed.length === state.dismissedAlertTypes.length &&
+    result.dismissed.every((t) => state.dismissedAlertTypes.includes(t));
+
   return {
+    ledger,
+    cycleKey: currentKey,
     alerts: alertsEqual(result.alerts, state.alerts) ? state.alerts : result.alerts,
-    dismissedAlertTypes: result.dismissed,
+    dismissedAlertTypes: sameDismissed ? state.dismissedAlertTypes : result.dismissed,
+    today: toLocalDateKey(date),
   };
 }
 
@@ -127,20 +158,35 @@ export const useEnergyStore = create<EnergyState>()(
             status: { isConnected: true, lastSyncTime: reading.timestamp, errorMessage: null },
           };
           set({
-            ledger: next.ledger,
             liveReading: next.liveReading,
             powerHistory: next.powerHistory,
             status: next.status,
-            ...computeAlerts(next, reading.timestamp),
+            ...evaluate(next, reading.timestamp),
           });
         },
 
-        reportConnectionError: (message) => {
-          set((state) => ({ status: { ...state.status, isConnected: false, errorMessage: message } }));
+        reportConnectionError: (message, now = Date.now()) => {
+          const state = get();
+          const status = { ...state.status, isConnected: false, errorMessage: message };
+          const stale = state.status.lastSyncTime === null || now - state.status.lastSyncTime > STALE_READING_MS;
+          if (!stale) {
+            set({ status });
+            return;
+          }
+          // La última potencia ya no es real: se deja de mostrar y se retira la alerta de sobrecarga.
+          const next: EnergyState = { ...state, status, liveReading: null };
+          set({ status, liveReading: null, ...evaluate(next, now) });
         },
 
         updateBudget: (changes) => {
-          setAndRefresh({ budget: { ...get().budget, ...changes } });
+          const state = get();
+          const budget = { ...state.budget, ...changes };
+          // Cambiar el día de inicio no debe borrar el consumo ya medido: solo se re-ancla el ciclo.
+          const cycleKey =
+            budget.billingCycleStartDay !== state.budget.billingCycleStartDay
+              ? toLocalDateKey(getBillingCycle(new Date(), budget.billingCycleStartDay).start)
+              : state.cycleKey;
+          setAndRefresh({ budget, cycleKey });
         },
 
         updateConnection: (changes) => {
@@ -174,13 +220,12 @@ export const useEnergyStore = create<EnergyState>()(
         },
 
         dismissAlert: (id) => {
-          set((state) => {
-            const alert = state.alerts.find((a) => a.id === id);
-            if (!alert) return state;
-            return {
-              alerts: state.alerts.filter((a) => a.id !== id),
-              dismissedAlertTypes: Array.from(new Set([...state.dismissedAlertTypes, alert.type])),
-            };
+          const state = get();
+          const alert = state.alerts.find((a) => a.id === id);
+          if (!alert) return;
+          commit({
+            alerts: state.alerts.filter((a) => a.id !== id),
+            dismissedAlertTypes: Array.from(new Set([...state.dismissedAlertTypes, alert.type])),
           });
         },
 
@@ -189,7 +234,12 @@ export const useEnergyStore = create<EnergyState>()(
         },
 
         refreshAlerts: (now = Date.now()) => {
-          set(computeAlerts(get(), now));
+          set(evaluate(get(), now));
+        },
+
+        markAlertNotified: (type, at) => {
+          const state = get();
+          commit({ alertNotifications: { ...state.alertNotifications, [type]: { at, cycleKey: state.cycleKey } } });
         },
       };
     },
@@ -204,6 +254,9 @@ export const useEnergyStore = create<EnergyState>()(
         captures: state.captures,
         themePreference: state.themePreference,
         hasDemoData: state.hasDemoData,
+        cycleKey: state.cycleKey,
+        dismissedAlertTypes: state.dismissedAlertTypes,
+        alertNotifications: state.alertNotifications,
       }),
       migrate: (persisted, version) => migratePersistedState(persisted, version) as unknown as EnergyState,
       onRehydrateStorage: () => () => {

@@ -44,6 +44,11 @@ function Tile({ icon, color, label, value, hint }: TileProps) {
   );
 }
 
+/** El firmware puede no enviar algunos campos: se muestran como "sin dato" en vez de un 0 engañoso. */
+function hasValue(value: number | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
 function powerFactorHint(pf: number): string {
   if (pf >= 0.95) return 'Excelente';
   if (pf >= 0.85) return 'Aceptable';
@@ -75,8 +80,8 @@ export function TelemetryGrid({ reading, meterKWh, cycleKWh, lastSyncTime }: Tel
             icon="sine-wave"
             color={colors.voltage}
             label="Tensión"
-            value={reading ? formatVoltage(reading.voltage) : empty}
-            hint={reading ? voltageHint(reading.voltage) : 'Sin dato'}
+            value={hasValue(reading?.voltage) ? formatVoltage(reading.voltage) : empty}
+            hint={hasValue(reading?.voltage) ? voltageHint(reading.voltage) : 'Sin dato'}
           />
           <Tile
             icon="current-ac"
@@ -91,15 +96,15 @@ export function TelemetryGrid({ reading, meterKWh, cycleKWh, lastSyncTime }: Tel
             icon="pulse"
             color={colors.frequency}
             label="Frecuencia"
-            value={reading ? formatFrequency(reading.frequency) : empty}
-            hint="Red de 50 Hz"
+            value={hasValue(reading?.frequency) ? formatFrequency(reading.frequency) : empty}
+            hint={hasValue(reading?.frequency) ? 'Red de 50 Hz' : 'Sin dato'}
           />
           <Tile
             icon="cosine-wave"
             color={colors.powerFactor}
             label="Factor de potencia"
-            value={reading ? formatPowerFactor(reading.powerFactor) : empty}
-            hint={reading ? powerFactorHint(reading.powerFactor) : 'Sin dato'}
+            value={hasValue(reading?.powerFactor) ? formatPowerFactor(reading.powerFactor) : empty}
+            hint={hasValue(reading?.powerFactor) ? powerFactorHint(reading.powerFactor) : 'Sin dato'}
           />
         </View>
       </View>
