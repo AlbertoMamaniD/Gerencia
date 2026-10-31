@@ -1,106 +1,53 @@
-/**
- * AhorraTech - Badge UI Component
- * Píldoras de estado para telemetría ("CONECTADO", "SIMULACIÓN", "SOBRECARGA", etc.)
- */
+import { View } from 'react-native';
+import { makeStyles, radius, spacing, useTheme } from '@/theme';
+import { AppText } from './AppText';
+import { Icon, IconName } from './Icon';
 
-import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors } from '../../theme/colors';
-
-export type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+export type BadgeTone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
 
 interface BadgeProps {
   label: string;
-  variant?: BadgeVariant;
-  showDot?: boolean;
-  style?: ViewStyle;
+  tone?: BadgeTone;
+  icon?: IconName;
 }
 
-export const Badge: React.FC<BadgeProps> = ({
-  label,
-  variant = 'info',
-  showDot = true,
-  style,
-}) => {
-  const getColors = () => {
-    switch (variant) {
-      case 'success':
-        return {
-          bg: colors.status.successBg,
-          text: colors.status.success,
-          dot: colors.status.success,
-          border: 'rgba(16, 185, 129, 0.3)',
-        };
-      case 'warning':
-        return {
-          bg: colors.status.warningBg,
-          text: colors.status.warning,
-          dot: colors.status.warning,
-          border: 'rgba(245, 158, 11, 0.3)',
-        };
-      case 'danger':
-        return {
-          bg: colors.status.dangerBg,
-          text: colors.status.danger,
-          dot: colors.status.danger,
-          border: 'rgba(239, 68, 68, 0.3)',
-        };
-      case 'neutral':
-        return {
-          bg: 'rgba(148, 163, 184, 0.1)',
-          text: colors.text.secondary,
-          dot: colors.text.muted,
-          border: colors.border.subtle,
-        };
-      case 'info':
-      default:
-        return {
-          bg: colors.status.infoBg,
-          text: colors.brand.electricBlue,
-          dot: colors.brand.electricBlue,
-          border: 'rgba(37, 99, 235, 0.25)',
-        };
-    }
+/** Etiqueta de estado: siempre combina texto + color (nunca solo color). */
+export function Badge({ label, tone = 'neutral', icon }: BadgeProps) {
+  const { colors } = useTheme();
+  const styles = useStyles();
+  const map: Record<BadgeTone, { bg: string; fg: string }> = {
+    neutral: { bg: colors.surfaceMuted, fg: colors.textSecondary },
+    primary: { bg: colors.primarySoft, fg: colors.primary },
+    success: { bg: colors.successSoft, fg: colors.success },
+    warning: { bg: colors.warningSoft, fg: colors.warning },
+    danger: { bg: colors.dangerSoft, fg: colors.danger },
   };
-
-  const scheme = getColors();
+  const { bg, fg } = map[tone];
 
   return (
-    <View
-      style={[
-        styles.badgeContainer,
-        {
-          backgroundColor: scheme.bg,
-          borderColor: scheme.border,
-        },
-        style,
-      ]}
-    >
-      {showDot && <View style={[styles.dot, { backgroundColor: scheme.dot }]} />}
-      <Text style={[styles.badgeText, { color: scheme.text }]}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      {icon ? <Icon name={icon} size={14} color={fg} /> : <View style={[styles.dot, { backgroundColor: fg }]} />}
+      <AppText variant="caption" color={fg} numberOfLines={1}>
+        {label}
+      </AppText>
     </View>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  badgeContainer: {
+const useStyles = makeStyles(() => ({
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
     alignSelf: 'flex-start',
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    flexShrink: 1,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 6,
   },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-});
+}));

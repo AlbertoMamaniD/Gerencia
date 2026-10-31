@@ -3,25 +3,31 @@
     "name": "AhorraTech",
     "slug": "ahorratech",
     "scheme": "ahorratech",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#061423",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.albertomamani.ahorratech"
     },
     "android": {
       "package": "com.albertomamani.ahorratech",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundColor": "#F8FAFC"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#061423"
       },
       "permissions": [
         "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -30,14 +36,42 @@
     },
     "plugins": [
       "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#061423"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AhorraTech usa tus fotos para leer el medidor de luz.",
+          "cameraPermission": "AhorraTech usa la cámara para fotografiar el medidor de luz.",
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
-          "color": "#00F0FF",
-          "sounds": []
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#0E7490"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
-    ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

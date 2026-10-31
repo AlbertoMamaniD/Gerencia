@@ -1,120 +1,141 @@
-/**
- * AhorraTech - TelemetryGrid Component
- * Consola de Instrumentación Eléctrica PZEM-004T de Alta Fidelidad.
- * Presenta una matriz integrada de 2x2 + franja de energía acumulada con bordes hairline,
- * tipografía tabular y telemetría de grado industrial sin cajitas genéricas flotantes.
- */
-
-import React from 'react';
-import { View, Text } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
+import { View } from 'react-native';
+import { AppText, Card, IconCircle, IconName, ListRow, SectionHeader } from '@/components/ui';
+import { PZEMReading } from '@/domain/types';
 import {
-  formatVoltage,
   formatCurrent,
+  formatEnergy,
   formatFrequency,
   formatPowerFactor,
-  formatEnergy,
-} from '../../utils/formatters';
-import { dashboardStyles } from '../../styles/dashboard.styles';
+  formatRelativeTime,
+  formatVoltage,
+} from '@/utils/formatters';
+import { makeStyles, radius, spacing, useTheme, withAlpha } from '@/theme';
 
 interface TelemetryGridProps {
-  voltage: number;
-  current: number;
-  frequency: number;
-  powerFactor: number;
-  energy: number;
+  reading: PZEMReading | null;
+  meterKWh: number;
+  cycleKWh: number;
+  lastSyncTime: number | null;
 }
 
-export const TelemetryGrid: React.FC<TelemetryGridProps> = ({
-  voltage,
-  current,
-  frequency,
-  powerFactor,
-  energy,
-}) => {
+interface TileProps {
+  icon: IconName;
+  color: string;
+  label: string;
+  value: string;
+  hint: string;
+}
+
+function Tile({ icon, color, label, value, hint }: TileProps) {
+  const styles = useStyles();
   return (
-    <View style={dashboardStyles.telemetryDeckContainer}>
-      {/* Cabecera Técnica de Instrumentación */}
-      <View style={dashboardStyles.telemetryHeader}>
-        <View style={dashboardStyles.telemetryHeaderLeft}>
-          <MaterialCommunityIcons name="chip" size={16} color={colors.brand.electricBlue} />
-          <Text style={dashboardStyles.telemetryHeaderTitle}>
-            TELEMETRÍA EN VIVO · PZEM-004T
-          </Text>
-        </View>
-        <View style={dashboardStyles.telemetryLiveBadge}>
-          <View style={dashboardStyles.livePulseDot} />
-          <Text style={dashboardStyles.livePulseText}>SYNC 1000ms</Text>
-        </View>
-      </View>
-
-      {/* Matriz 2x2 de Parámetros de Red */}
-      <View style={dashboardStyles.matrixRow}>
-        {/* Tensión */}
-        <View style={[dashboardStyles.matrixCell, dashboardStyles.matrixCellRightBorder, dashboardStyles.matrixCellBottomBorder]}>
-          <View style={dashboardStyles.cellLabelRow}>
-            <Text style={dashboardStyles.cellLabel}>TENSIÓN</Text>
-            <MaterialCommunityIcons name="sine-wave" size={16} color={colors.telemetry.voltage} />
-          </View>
-          <Text style={[dashboardStyles.cellValue, { color: colors.telemetry.voltage }]}>
-            {formatVoltage(voltage)}
-          </Text>
-          <Text style={dashboardStyles.cellSubtext}>Nominal 220 V</Text>
-        </View>
-
-        {/* Corriente */}
-        <View style={[dashboardStyles.matrixCell, dashboardStyles.matrixCellBottomBorder]}>
-          <View style={dashboardStyles.cellLabelRow}>
-            <Text style={dashboardStyles.cellLabel}>CORRIENTE</Text>
-            <MaterialCommunityIcons name="current-ac" size={16} color={colors.telemetry.amp} />
-          </View>
-          <Text style={[dashboardStyles.cellValue, { color: colors.telemetry.amp }]}>
-            {formatCurrent(current)}
-          </Text>
-          <Text style={dashboardStyles.cellSubtext}>Carga instantánea</Text>
-        </View>
-      </View>
-
-      <View style={dashboardStyles.matrixRow}>
-        {/* Frecuencia */}
-        <View style={[dashboardStyles.matrixCell, dashboardStyles.matrixCellRightBorder]}>
-          <View style={dashboardStyles.cellLabelRow}>
-            <Text style={dashboardStyles.cellLabel}>FRECUENCIA</Text>
-            <MaterialCommunityIcons name="pulse" size={16} color={colors.telemetry.hz} />
-          </View>
-          <Text style={[dashboardStyles.cellValue, { color: colors.telemetry.hz }]}>
-            {formatFrequency(frequency)}
-          </Text>
-          <Text style={dashboardStyles.cellSubtext}>Estabilidad 50 Hz</Text>
-        </View>
-
-        {/* Factor de Potencia */}
-        <View style={dashboardStyles.matrixCell}>
-          <View style={dashboardStyles.cellLabelRow}>
-            <Text style={dashboardStyles.cellLabel}>FACTOR COS φ</Text>
-            <MaterialCommunityIcons name="cosine-wave" size={16} color={colors.telemetry.pf} />
-          </View>
-          <Text style={[dashboardStyles.cellValue, { color: colors.telemetry.pf }]}>
-            {formatPowerFactor(powerFactor)}
-          </Text>
-          <Text style={dashboardStyles.cellSubtext}>
-            {powerFactor >= 0.95 ? 'Excelente (≥0.95)' : 'Inductivo (<0.95)'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Franja de Energía Activa Acumulada */}
-      <View style={dashboardStyles.energyTotalRow}>
-        <View style={dashboardStyles.energyTotalLeft}>
-          <MaterialCommunityIcons name="lightning-bolt-circle" size={20} color={colors.brand.electricBlue} />
-          <View>
-            <Text style={dashboardStyles.energyTotalTitle}>ENERGÍA ACTIVA ACUMULADA</Text>
-            <Text style={dashboardStyles.energyTotalSubtitle}>Lectura acumulada del sensor de red</Text>
-          </View>
-        </View>
-        <Text style={dashboardStyles.energyTotalValue}>{formatEnergy(energy)}</Text>
-      </View>
+    <View style={styles.tile} accessible accessibilityLabel={`${label}: ${value}. ${hint}`}>
+      <IconCircle name={icon} color={color} background={withAlpha(color, 0.12)} size={36} />
+      <AppText variant="caption" tone="muted" numberOfLines={2}>
+        {label}
+      </AppText>
+      <AppText variant="metric" tabular numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {value}
+      </AppText>
+      <AppText variant="caption" tone="secondary" numberOfLines={1}>
+        {hint}
+      </AppText>
     </View>
   );
-};
+}
+
+function powerFactorHint(pf: number): string {
+  if (pf >= 0.95) return 'Excelente';
+  if (pf >= 0.85) return 'Aceptable';
+  return 'Bajo (carga inductiva)';
+}
+
+function voltageHint(v: number): string {
+  if (v === 0) return 'Sin dato';
+  // Tolerancia típica de ±10% sobre 220 V.
+  if (v < 198) return 'Tensión baja';
+  if (v > 242) return 'Tensión alta';
+  return 'Normal (220 V)';
+}
+
+export function TelemetryGrid({ reading, meterKWh, cycleKWh, lastSyncTime }: TelemetryGridProps) {
+  const { colors } = useTheme();
+  const styles = useStyles();
+  const empty = '—';
+
+  return (
+    <Card style={styles.card}>
+      <SectionHeader
+        title="Mediciones"
+        description={lastSyncTime ? `Actualizado ${formatRelativeTime(lastSyncTime)}` : 'Sin lecturas todavía'}
+      />
+      <View style={styles.grid}>
+        <View style={styles.row}>
+          <Tile
+            icon="sine-wave"
+            color={colors.voltage}
+            label="Tensión"
+            value={reading ? formatVoltage(reading.voltage) : empty}
+            hint={reading ? voltageHint(reading.voltage) : 'Sin dato'}
+          />
+          <Tile
+            icon="current-ac"
+            color={colors.current}
+            label="Corriente"
+            value={reading ? formatCurrent(reading.current) : empty}
+            hint="Carga actual"
+          />
+        </View>
+        <View style={styles.row}>
+          <Tile
+            icon="pulse"
+            color={colors.frequency}
+            label="Frecuencia"
+            value={reading ? formatFrequency(reading.frequency) : empty}
+            hint="Red de 50 Hz"
+          />
+          <Tile
+            icon="cosine-wave"
+            color={colors.powerFactor}
+            label="Factor de potencia"
+            value={reading ? formatPowerFactor(reading.powerFactor) : empty}
+            hint={reading ? powerFactorHint(reading.powerFactor) : 'Sin dato'}
+          />
+        </View>
+      </View>
+      <ListRow
+        icon="counter"
+        iconColor={colors.primary}
+        iconBackground={colors.primarySoft}
+        title="Lectura del medidor"
+        subtitle={`Consumo del ciclo: ${formatEnergy(cycleKWh)}`}
+        trailing={
+          <AppText variant="bodyStrong" tabular>
+            {formatEnergy(meterKWh, 1)}
+          </AppText>
+        }
+      />
+    </Card>
+  );
+}
+
+const useStyles = makeStyles((theme) => ({
+  card: {
+    gap: spacing.md,
+  },
+  grid: {
+    gap: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  tile: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: theme.colors.surfaceMuted,
+  },
+}));

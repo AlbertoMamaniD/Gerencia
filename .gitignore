@@ -33,6 +33,7 @@ yarn-error.*
 .env
 .env*.local
 .env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -40,3 +41,13 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# tests
+coverage/
+
+# expo router types
+expo-env.d.ts
+
+# exportaciones de CI
+dist-android/
+dist-web/
