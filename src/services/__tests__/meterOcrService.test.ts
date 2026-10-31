@@ -67,6 +67,12 @@ describe('recognizeMeterReading (Edge Function)', () => {
     expect(init.body).not.toMatch(/AIza|key/i);
   });
 
+  it('usa el nombre de función configurado (el slug de Supabase no se puede renombrar)', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(response({ text: '{"is_meter":true,"kwh":7}' }));
+    await recognizeMeterReading({ ...base, fetchImpl, functionName: 'hyper-endpoint' });
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://demo.supabase.co/functions/v1/hyper-endpoint');
+  });
+
   it('reintenta una vez con sesión nueva si el token fue rechazado', async () => {
     const fetchImpl = jest
       .fn()
@@ -113,5 +119,19 @@ describe('recognizeMeterReading (Edge Function)', () => {
   it('una foto que no es medidor se informa', async () => {
     const fetchImpl = jest.fn().mockResolvedValue(response({ text: '{"is_meter":false}' }));
     await expect(recognizeMeterReading({ ...base, fetchImpl })).rejects.toMatchObject({ code: 'not_a_meter' });
+  });
+});
+
+describe('normalizeFunctionSlug', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { normalizeFunctionSlug, DEFAULT_OCR_FUNCTION } = require('@/config/env');
+  it.each([
+    [undefined, DEFAULT_OCR_FUNCTION],
+    ['', DEFAULT_OCR_FUNCTION],
+    [' hyper-endpoint ', 'hyper-endpoint'],
+    ['../../otra', DEFAULT_OCR_FUNCTION],
+    ['ocr meter', DEFAULT_OCR_FUNCTION],
+  ])('%s → %s', (input, expected) => {
+    expect(normalizeFunctionSlug(input)).toBe(expected);
   });
 });

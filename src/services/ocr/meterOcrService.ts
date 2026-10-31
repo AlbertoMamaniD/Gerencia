@@ -82,6 +82,8 @@ interface RecognizeOptions {
   anonKey?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
+  /** Slug de la Edge Function (por defecto EXPO_PUBLIC_OCR_FUNCTION u "ocr-meter"). */
+  functionName?: string;
   getSession?: () => Promise<CloudSession>;
   resetSession?: () => Promise<void>;
 }
@@ -108,6 +110,7 @@ export async function recognizeMeterReading(options: RecognizeOptions): Promise<
     anonKey = env.supabaseAnonKey,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     fetchImpl = fetch,
+    functionName = env.ocrFunction,
     getSession = () => getCloudSession(),
     resetSession = () => clearCloudSession(),
   } = options;
@@ -135,7 +138,7 @@ export async function recognizeMeterReading(options: RecognizeOptions): Promise<
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await fetchImpl(`${url}/functions/v1/ocr-meter`, {
+      return await fetchImpl(`${url}/functions/v1/${functionName}`, {
         method: 'POST',
         headers: {
           apikey: anonKey,

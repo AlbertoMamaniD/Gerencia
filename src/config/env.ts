@@ -7,9 +7,19 @@
  * La clave de Gemini vive únicamente como secreto de la Edge Function "ocr-meter".
  */
 
+export const DEFAULT_OCR_FUNCTION = 'ocr-meter';
+
+/** Acepta solo slugs válidos (letras, números, guiones); si no, usa el valor por defecto. */
+export function normalizeFunctionSlug(value: string | undefined): string {
+  const slug = (value ?? '').trim();
+  return /^[a-z0-9][a-z0-9_-]{0,62}$/i.test(slug) ? slug : DEFAULT_OCR_FUNCTION;
+}
+
 export const env = {
   supabaseUrl: (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, ''),
   supabaseAnonKey: (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim(),
+  /** Nombre (slug) de la Edge Function de OCR. Supabase no permite renombrarlo después de crearla. */
+  ocrFunction: normalizeFunctionSlug(process.env.EXPO_PUBLIC_OCR_FUNCTION),
 };
 
 export function isSupabaseConfigured(): boolean {
