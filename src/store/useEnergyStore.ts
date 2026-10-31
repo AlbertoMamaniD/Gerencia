@@ -1,255 +1,215 @@
 /**
- * AhorraTech - Store Global (Zustand v4)
- * Arquitectura Híbrida:
- * - Telemetría en vivo (alta frecuencia: 2s) en RAM para 60 FPS sin I/O overhead.
- * - Configuración financiera (Bs), historial y hardware persistidos en AsyncStorage.
+ * Store global (Zustand).
+ * - Persistente (AsyncStorage con escritura agrupada): presupuesto, fuente de datos,
+ *   libro del medidor, capturas y tema.
+ * - Volátil (RAM): última lectura, curva de potencia, estado de conexión y alertas.
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { alertsEqual, evaluateAlertConditions, reconcileAlerts } from '@/domain/alerts';
+import { calculateFinancialProjection } from '@/domain/billing';
 import {
-  EnergyStoreState,
-  PZEMReading,
-  BudgetConfig,
-  DeviceConnection,
-  LivePowerPoint,
-  DailyConsumption,
+  applySensorReading,
+  calibrateLedger,
+  createLedger,
+  detachSensor,
+  getCycleEnergyKWh,
+  resetLedgerCycle,
+} from '@/domain/meter';
+import {
   ActiveAlert,
-} from '../types/energy.types';
-import { formatShortTime } from '../utils/formatters';
+  AlertType,
+  BudgetConfig,
+  ConnectionConfig,
+  ConnectionStatus,
+  LivePowerPoint,
+  MeterCaptureRecord,
+  PZEMReading,
+} from '@/domain/types';
+import type { ThemePreference } from '@/theme/ThemeProvider';
+import {
+  createInitialPersistedState,
+  MAX_CAPTURES,
+  migratePersistedState,
+  PersistedState,
+  STORE_VERSION,
+} from './migrations';
+import { flushStorage, throttledStorage } from './throttledStorage';
 
-const DEFAULT_BUDGET_CONFIG: BudgetConfig = {
-  ratePerKWh: 0.85,           // Tarifa promedio residencial en Bolivia (Bs/kWh)
-  monthlyBudgetBs: 180.00,    // Presupuesto mensual objetivo (Bs)
-  billingCycleStartDay: 1,    // Inicio de ciclo: 1er día del mes
-  warningThresholdPct: 80,    // Alerta preventiva al 80%
-  criticalThresholdPct: 100,  // Alerta crítica al 100%
-  maxPowerThresholdW: 3500,   // Corte preventivo a 3.5 kW (típico disyuntor 16A a 220V)
-};
+export const POWER_HISTORY_SIZE = 30;
+export const STORAGE_KEY = 'ahorratech-storage-v2';
 
-const DEFAULT_CONNECTION: DeviceConnection = {
-  mode: 'simulation',
-  ipAddress: '192.168.4.1',   // IP AP por defecto del ESP32
-  pollingIntervalMs: 2000,    // 2 segundos
-  isConnected: true,
-  isPolling: false,
-  lastSyncTime: null,
-  errorMessage: null,
-  rssi: -62,
-  geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
-  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
-  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
-};
-
-const INITIAL_READING: PZEMReading = {
-  voltage: 221.4,
-  current: 3.25,
-  power: 712.0,
-  energy: 84.60,
-  frequency: 50.1,
-  powerFactor: 0.98,
-  timestamp: Date.now(),
-};
-
-/**
- * Genera 7 días de historial realista de consumo residencial en Bolivia.
- */
-function generateSeedDailyHistory(): DailyConsumption[] {
-  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const now = new Date();
-  const history: DailyConsumption[] = [];
-
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dayLabel = days[d.getDay()];
-    const dateStr = d.toISOString().split('T')[0];
-
-    // Consumo típico diario entre 3.2 kWh y 5.8 kWh
-    const baseKWh = 3.8 + Math.sin(i * 1.2) * 1.4;
-    const energyKWh = Number(baseKWh.toFixed(2));
-    const costBs = Number((energyKWh * DEFAULT_BUDGET_CONFIG.ratePerKWh).toFixed(2));
-
-    history.push({
-      date: dateStr,
-      dayLabel,
-      energyKWh,
-      costBs,
-    });
-  }
-
-  return history;
+interface RuntimeState {
+  liveReading: PZEMReading | null;
+  powerHistory: LivePowerPoint[];
+  status: ConnectionStatus;
+  alerts: ActiveAlert[];
+  dismissedAlertTypes: AlertType[];
+  hasHydrated: boolean;
 }
 
-export const useEnergyStore = create<EnergyStoreState>()(
+interface Actions {
+  ingestReading: (reading: PZEMReading) => void;
+  reportConnectionError: (message: string) => void;
+  updateBudget: (changes: Partial<BudgetConfig>) => void;
+  updateConnection: (changes: Partial<ConnectionConfig>) => void;
+  setThemePreference: (preference: ThemePreference) => void;
+  calibrateMeter: (meterReadingKWh: number) => void;
+  addCapture: (capture: MeterCaptureRecord) => void;
+  dismissAlert: (id: string) => void;
+  resetCycle: () => void;
+  refreshAlerts: (now?: number) => void;
+}
+
+export type EnergyState = PersistedState & RuntimeState & Actions;
+
+export const initialRuntimeState: RuntimeState = {
+  liveReading: null,
+  powerHistory: [],
+  status: { isConnected: false, lastSyncTime: null, errorMessage: null },
+  alerts: [],
+  dismissedAlertTypes: [],
+  hasHydrated: false,
+};
+
+/** Recalcula las alertas a partir del estado (presupuesto + potencia). */
+function computeAlerts(state: EnergyState, now: number): Pick<RuntimeState, 'alerts' | 'dismissedAlertTypes'> {
+  const projection = calculateFinancialProjection({
+    cycleEnergyKWh: getCycleEnergyKWh(state.ledger),
+    ratePerKWh: state.budget.ratePerKWh,
+    monthlyBudgetBs: state.budget.monthlyBudgetBs,
+    cycleStartDay: state.budget.billingCycleStartDay,
+    warningThresholdPct: state.budget.warningThresholdPct,
+    referenceDate: new Date(now),
+  });
+  const conditions = evaluateAlertConditions({
+    powerW: state.liveReading?.power ?? 0,
+    maxPowerW: state.budget.maxPowerThresholdW,
+    consumedPct: projection.budgetConsumedPct,
+    warningThresholdPct: state.budget.warningThresholdPct,
+    currentCostBs: projection.currentCostBs,
+    monthlyBudgetBs: state.budget.monthlyBudgetBs,
+  });
+  const result = reconcileAlerts(state.alerts, conditions, state.dismissedAlertTypes, now);
+  return {
+    alerts: alertsEqual(result.alerts, state.alerts) ? state.alerts : result.alerts,
+    dismissedAlertTypes: result.dismissed,
+  };
+}
+
+export const useEnergyStore = create<EnergyState>()(
   persist(
-    (set, get) => ({
-      // Telemetría en RAM (Volátil, 60 FPS)
-      liveReading: INITIAL_READING,
-      powerHistory: [
-        { timestamp: Date.now() - 38000, timeLabel: formatShortTime(Date.now() - 38000), power: 650 },
-        { timestamp: Date.now() - 36000, timeLabel: formatShortTime(Date.now() - 36000), power: 680 },
-        { timestamp: Date.now() - 34000, timeLabel: formatShortTime(Date.now() - 34000), power: 710 },
-        { timestamp: Date.now() - 32000, timeLabel: formatShortTime(Date.now() - 32000), power: 690 },
-        { timestamp: Date.now() - 30000, timeLabel: formatShortTime(Date.now() - 30000), power: 720 },
-        { timestamp: Date.now() - 28000, timeLabel: formatShortTime(Date.now() - 28000), power: 705 },
-        { timestamp: Date.now() - 26000, timeLabel: formatShortTime(Date.now() - 26000), power: 740 },
-        { timestamp: Date.now() - 24000, timeLabel: formatShortTime(Date.now() - 24000), power: 850 },
-        { timestamp: Date.now() - 22000, timeLabel: formatShortTime(Date.now() - 22000), power: 920 },
-        { timestamp: Date.now() - 20000, timeLabel: formatShortTime(Date.now() - 20000), power: 880 },
-        { timestamp: Date.now() - 18000, timeLabel: formatShortTime(Date.now() - 18000), power: 790 },
-        { timestamp: Date.now() - 16000, timeLabel: formatShortTime(Date.now() - 16000), power: 710 },
-        { timestamp: Date.now() - 14000, timeLabel: formatShortTime(Date.now() - 14000), power: 700 },
-        { timestamp: Date.now() - 12000, timeLabel: formatShortTime(Date.now() - 12000), power: 715 },
-        { timestamp: Date.now() - 10000, timeLabel: formatShortTime(Date.now() - 10000), power: 730 },
-        { timestamp: Date.now() - 8000, timeLabel: formatShortTime(Date.now() - 8000), power: 705 },
-        { timestamp: Date.now() - 6000, timeLabel: formatShortTime(Date.now() - 6000), power: 695 },
-        { timestamp: Date.now() - 4000, timeLabel: formatShortTime(Date.now() - 4000), power: 710 },
-        { timestamp: Date.now() - 2000, timeLabel: formatShortTime(Date.now() - 2000), power: 712 },
-        { timestamp: Date.now(), timeLabel: formatShortTime(Date.now()), power: 712 },
-      ],
-      activeAlerts: [],
+    (set, get) => {
+      /** Cambios hechos por el usuario: se guardan a disco de inmediato (sin esperar el agrupado). */
+      const commit = (partial: Partial<EnergyState>) => {
+        set(partial);
+        void flushStorage();
+      };
+      const setAndRefresh = (partial: Partial<EnergyState>) => {
+        commit(partial);
+        get().refreshAlerts();
+      };
 
-      // Estado Persistente
-      budgetConfig: DEFAULT_BUDGET_CONFIG,
-      connection: DEFAULT_CONNECTION,
-      dailyHistory: generateSeedDailyHistory(),
-      cycleStartTimestamp: Date.now() - 14 * 24 * 60 * 60 * 1000, // Hace 14 días
+      return {
+        ...createInitialPersistedState(),
+        ...initialRuntimeState,
 
-      // Actualizar lectura en vivo
-      setLiveReading: (reading: PZEMReading) => {
-        const state = get();
-        const newPoint: LivePowerPoint = {
-          timestamp: reading.timestamp,
-          timeLabel: formatShortTime(reading.timestamp),
-          power: reading.power,
-        };
-
-        // Mantener exactamente las últimas 20 lecturas
-        const updatedHistory = [...state.powerHistory.slice(-19), newPoint];
-
-        // Verificar sobrecarga eléctrica de potencia instantánea
-        const isOverloaded = reading.power > state.budgetConfig.maxPowerThresholdW;
-        let updatedAlerts = state.activeAlerts;
-
-        if (isOverloaded) {
-          const alertExists = updatedAlerts.some((a) => a.type === 'overload');
-          if (!alertExists) {
-            updatedAlerts = [
-              ...updatedAlerts,
-              {
-                id: `overload-${Date.now()}`,
-                type: 'overload',
-                title: '¡Sobrecarga Eléctrica Detectada!',
-                message: `Potencia actual de ${Math.round(reading.power)} W superó el umbral seguro de ${state.budgetConfig.maxPowerThresholdW} W.`,
-                severity: 'critical',
-                timestamp: Date.now(),
-              },
-            ];
-          }
-        } else {
-          // Descartar alerta de sobrecarga automáticamente si se normaliza
-          updatedAlerts = updatedAlerts.filter((a) => a.type !== 'overload');
-        }
-
-        set({
-          liveReading: reading,
-          powerHistory: updatedHistory,
-          activeAlerts: updatedAlerts,
-        });
-      },
-
-      updateBudgetConfig: (newConfig: Partial<BudgetConfig>) => {
-        set((state) => ({
-          budgetConfig: {
-            ...state.budgetConfig,
-            ...newConfig,
-          },
-        }));
-      },
-
-      updateConnection: (newConn: Partial<DeviceConnection>) => {
-        set((state) => ({
-          connection: {
-            ...state.connection,
-            ...newConn,
-          },
-        }));
-      },
-
-      addAlert: (alert: ActiveAlert) => {
-        set((state) => {
-          if (state.activeAlerts.some((a) => a.id === alert.id || a.type === alert.type)) {
-            return state;
-          }
-          return { activeAlerts: [alert, ...state.activeAlerts] };
-        });
-      },
-
-      dismissAlert: (id: string) => {
-        set((state) => ({
-          activeAlerts: state.activeAlerts.filter((a) => a.id !== id),
-        }));
-      },
-
-      meterCaptures: [],
-
-      resetBillingCycle: () => {
-        set({
-          cycleStartTimestamp: Date.now(),
-          dailyHistory: generateSeedDailyHistory(),
-        });
-      },
-
-      seedInitialDataIfEmpty: () => {
-        const state = get();
-        if (!state.dailyHistory || state.dailyHistory.length === 0) {
-          set({ dailyHistory: generateSeedDailyHistory() });
-        }
-      },
-
-      addMeterCapture: (capture) => {
-        set((state) => ({
-          meterCaptures: [capture, ...state.meterCaptures],
-        }));
-      },
-
-      calibrateEnergyFromMeter: (newEnergyKWh: number) => {
-        const state = get();
-        set({
-          liveReading: {
-            ...state.liveReading,
-            energy: Number(newEnergyKWh.toFixed(2)),
-          },
-        });
-      },
-    }),
-    {
-      name: 'ahorratech-storage-v2',
-      storage: createJSONStorage(() => AsyncStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.connection.geminiApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
-          state.connection.supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-          state.connection.supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
-        }
-      },
-      partialize: (state) => ({
-        budgetConfig: state.budgetConfig,
-        connection: {
-          mode: state.connection.mode,
-          ipAddress: state.connection.ipAddress,
-          pollingIntervalMs: state.connection.pollingIntervalMs,
-          isConnected: state.connection.isConnected,
-          isPolling: false,
-          lastSyncTime: state.connection.lastSyncTime,
-          errorMessage: null,
+        ingestReading: (reading) => {
+          const state = get();
+          const next: EnergyState = {
+            ...state,
+            ledger: applySensorReading(state.ledger, reading.energy, new Date(reading.timestamp)),
+            liveReading: reading,
+            powerHistory: [...state.powerHistory, { timestamp: reading.timestamp, power: reading.power }].slice(
+              -POWER_HISTORY_SIZE
+            ),
+            status: { isConnected: true, lastSyncTime: reading.timestamp, errorMessage: null },
+          };
+          set({
+            ledger: next.ledger,
+            liveReading: next.liveReading,
+            powerHistory: next.powerHistory,
+            status: next.status,
+            ...computeAlerts(next, reading.timestamp),
+          });
         },
-        dailyHistory: state.dailyHistory,
-        cycleStartTimestamp: state.cycleStartTimestamp,
-        meterCaptures: state.meterCaptures || [],
+
+        reportConnectionError: (message) => {
+          set((state) => ({ status: { ...state.status, isConnected: false, errorMessage: message } }));
+        },
+
+        updateBudget: (changes) => {
+          setAndRefresh({ budget: { ...get().budget, ...changes } });
+        },
+
+        updateConnection: (changes) => {
+          const state = get();
+          const connection = { ...state.connection, ...changes };
+          const sourceChanged = connection.mode !== state.connection.mode || connection.host !== state.connection.host;
+          if (!sourceChanged) {
+            commit({ connection });
+            return;
+          }
+          // Al pasar a un ESP32 real se descartan los datos de demostración.
+          const leavingDemo = state.hasDemoData && connection.mode === 'hardware';
+          setAndRefresh({
+            connection,
+            ledger: leavingDemo ? createLedger(0) : detachSensor(state.ledger),
+            hasDemoData: leavingDemo ? false : state.hasDemoData,
+            liveReading: null,
+            powerHistory: [],
+            status: { isConnected: false, lastSyncTime: null, errorMessage: null },
+          });
+        },
+
+        setThemePreference: (themePreference) => commit({ themePreference }),
+
+        calibrateMeter: (meterReadingKWh) => {
+          setAndRefresh({ ledger: calibrateLedger(get().ledger, meterReadingKWh) });
+        },
+
+        addCapture: (capture) => {
+          commit({ captures: [capture, ...get().captures].slice(0, MAX_CAPTURES) });
+        },
+
+        dismissAlert: (id) => {
+          set((state) => {
+            const alert = state.alerts.find((a) => a.id === id);
+            if (!alert) return state;
+            return {
+              alerts: state.alerts.filter((a) => a.id !== id),
+              dismissedAlertTypes: Array.from(new Set([...state.dismissedAlertTypes, alert.type])),
+            };
+          });
+        },
+
+        resetCycle: () => {
+          setAndRefresh({ ledger: resetLedgerCycle(get().ledger), dismissedAlertTypes: [] });
+        },
+
+        refreshAlerts: (now = Date.now()) => {
+          set(computeAlerts(get(), now));
+        },
+      };
+    },
+    {
+      name: STORAGE_KEY,
+      version: STORE_VERSION,
+      storage: createJSONStorage(() => throttledStorage),
+      partialize: (state): PersistedState => ({
+        budget: state.budget,
+        connection: state.connection,
+        ledger: state.ledger,
+        captures: state.captures,
+        themePreference: state.themePreference,
+        hasDemoData: state.hasDemoData,
       }),
+      migrate: (persisted, version) => migratePersistedState(persisted, version) as unknown as EnergyState,
+      onRehydrateStorage: () => () => {
+        useEnergyStore.setState({ hasHydrated: true });
+        useEnergyStore.getState().refreshAlerts();
+      },
     }
   )
 );
