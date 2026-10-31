@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { isOcrConfigured, isSupabaseConfigured } from '@/config/env';
 import { calculateCostBs, roundTo } from '@/domain/billing';
 import { OcrError, OcrScanResult, recognizeMeterReading } from '@/services/ocr/meterOcrService';
-import { prepareImageForOcr } from '@/services/ocr/prepareImage';
+import { PreparedImage, prepareImageForOcr } from '@/services/ocr/prepareImage';
 import { uploadMeterScan } from '@/services/cloud/supabaseStorage';
 import { vibrate } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
@@ -38,15 +38,31 @@ export function useMeterScan() {
   const [state, setState] = useState<MeterScanState>(INITIAL);
   // Ignora resultados de un análisis anterior si el usuario ya empezó otro.
   const requestId = useRef(0);
+  // Evita calibrar dos veces si se confirma repetidamente mientras se guarda.
+  const saving = useRef(false);
 
   const analyze = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
     const id = ++requestId.current;
     setState({ phase: 'processing', imageUri: asset.uri, result: null, feedback: null });
 
+    // Siempre se reduce y convierte a JPEG: menos datos y cumple el límite del bucket (JPEG ≤ 5 MB).
+    let prepared: PreparedImage;
+    try {
+      prepared = await prepareImageForOcr(asset.uri, asset.width);
+    } catch {
+      if (id !== requestId.current) return;
+      setState({
+        ...INITIAL,
+        feedback: { tone: 'danger', title: 'No se pudo procesar la foto', message: 'Intenta con otra imagen.' },
+      });
+      return;
+    }
+    if (id !== requestId.current) return;
+
     if (!isOcrConfigured()) {
       setState({
         phase: 'review',
-        imageUri: asset.uri,
+        imageUri: prepared.uri,
         result: null,
         feedback: {
           tone: 'info',
@@ -58,7 +74,6 @@ export function useMeterScan() {
     }
 
     try {
-      const prepared = await prepareImageForOcr(asset.uri, asset.width);
       const result = await recognizeMeterReading({ base64Image: prepared.base64 });
       if (id !== requestId.current) return;
       vibrate('success');
@@ -67,8 +82,19 @@ export function useMeterScan() {
       if (id !== requestId.current) return;
       vibrate('warning');
       const message = err instanceof Error ? err.message : 'No se pudo procesar la imagen.';
-      const title = err instanceof OcrError && err.code === 'not_a_meter' ? 'No es un medidor' : 'No se pudo leer el medidor';
-      setState({ phase: 'idle', imageUri: asset.uri, result: null, feedback: { tone: 'danger', title, message } });
+      if (err instanceof OcrError && (err.code === 'not_a_meter' || err.code === 'unreadable')) {
+        // Conviene tomar otra foto.
+        const title = err.code === 'not_a_meter' ? 'No es un medidor' : 'No se pudo leer el medidor';
+        setState({ phase: 'idle', imageUri: prepared.uri, result: null, feedback: { tone: 'danger', title, message } });
+        return;
+      }
+      // Servicio no disponible, sin cuota o sin red: se conserva la foto y se pasa a ingreso manual.
+      setState({
+        phase: 'review',
+        imageUri: prepared.uri,
+        result: null,
+        feedback: { tone: 'warning', title: 'Lectura automática no disponible', message },
+      });
     }
   }, []);
 
@@ -124,7 +150,7 @@ export function useMeterScan() {
     void Linking.openSettings();
   }, []);
 
-  const confirm = useCallback(
+  const save = useCallback(
     async (readingKWh: number) => {
       const store = useEnergyStore.getState();
       const previousKWh = store.ledger.meterKWh;
@@ -148,7 +174,7 @@ export function useMeterScan() {
       }
 
       store.addCapture({
-        id: `capture-${Date.now()}`,
+        id: `capture-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         imageUri,
         detectedKWh: readingKWh,
         costBs: calculateCostBs(readingKWh, store.budget.ratePerKWh),
@@ -172,6 +198,19 @@ export function useMeterScan() {
       });
     },
     [state]
+  );
+
+  const confirm = useCallback(
+    async (readingKWh: number) => {
+      if (saving.current) return;
+      saving.current = true;
+      try {
+        await save(readingKWh);
+      } finally {
+        saving.current = false;
+      }
+    },
+    [save]
   );
 
   const clearFeedback = useCallback(() => setState((s) => ({ ...s, feedback: null })), []);

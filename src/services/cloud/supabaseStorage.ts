@@ -1,9 +1,11 @@
 /**
- * Respaldo en la nube (Supabase): sube la foto al bucket `meter-photos`
- * y registra la calibración en la tabla `meter_scans`.
+ * Respaldo en la nube (Supabase): sube la foto al bucket privado `meter-photos`,
+ * dentro de la carpeta del usuario, y registra la calibración en `meter_scans`.
+ * Las políticas RLS solo permiten a cada usuario escribir y leer lo suyo.
  */
 
 import { env } from '@/config/env';
+import { CloudSession, getCloudSession } from './supabaseAuth';
 
 export interface ScanUploadPayload {
   detectedKWh: number;
@@ -13,13 +15,14 @@ export interface ScanUploadPayload {
   confidence: number | null;
 }
 
-export type UploadResult = { success: true; photoUrl: string; recordId?: string } | { success: false; error: string };
+export type UploadResult = { success: true; photoPath: string } | { success: false; error: string };
 
 interface UploadOptions {
   url?: string;
   anonKey?: string;
   fetchImpl?: typeof fetch;
   now?: number;
+  getSession?: () => Promise<CloudSession>;
 }
 
 /** Nombre de archivo seguro: el serial leído por OCR puede traer espacios, barras o tildes. */
@@ -41,20 +44,28 @@ export async function uploadMeterScan(
   const baseUrl = (options.url ?? env.supabaseUrl).replace(/\/+$/, '');
   const anonKey = options.anonKey ?? env.supabaseAnonKey;
   const fetchImpl = options.fetchImpl ?? fetch;
+  const getSession = options.getSession ?? (() => getCloudSession());
 
   if (!baseUrl || !anonKey) {
     return { success: false, error: 'El respaldo en la nube no está configurado.' };
   }
 
-  const fileName = buildPhotoFileName(payload.meterSerial, options.now ?? Date.now());
-  const authHeaders = { apikey: anonKey, Authorization: `Bearer ${anonKey}` };
+  let session: CloudSession;
+  try {
+    session = await getSession();
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'No se pudo iniciar sesión en la nube.' };
+  }
+
+  const photoPath = `${session.userId}/${buildPhotoFileName(payload.meterSerial, options.now ?? Date.now())}`;
+  const authHeaders = { apikey: anonKey, Authorization: `Bearer ${session.accessToken}` };
 
   try {
     const form = new FormData();
     // React Native acepta { uri, name, type } como archivo en FormData.
-    form.append('file', { uri: imageUri, name: fileName, type: 'image/jpeg' } as unknown as Blob);
+    form.append('file', { uri: imageUri, name: photoPath.split('/').pop(), type: 'image/jpeg' } as unknown as Blob);
 
-    const storageRes = await fetchImpl(`${baseUrl}/storage/v1/object/meter-photos/${fileName}`, {
+    const storageRes = await fetchImpl(`${baseUrl}/storage/v1/object/meter-photos/${photoPath}`, {
       method: 'POST',
       headers: authHeaders,
       body: form,
@@ -63,12 +74,12 @@ export async function uploadMeterScan(
       return { success: false, error: `No se pudo subir la foto (error ${storageRes.status}).` };
     }
 
-    const photoUrl = `${baseUrl}/storage/v1/object/public/meter-photos/${fileName}`;
     const dbRes = await fetchImpl(`${baseUrl}/rest/v1/meter_scans`, {
       method: 'POST',
-      headers: { ...authHeaders, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      headers: { ...authHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({
-        photo_url: photoUrl,
+        owner_id: session.userId,
+        photo_url: photoPath,
         detected_kwh: payload.detectedKWh,
         hardware_kwh: payload.previousKWh,
         difference_kwh: payload.differenceKWh,
@@ -80,10 +91,7 @@ export async function uploadMeterScan(
     if (!dbRes.ok) {
       return { success: false, error: `La foto se subió, pero no se pudo registrar (error ${dbRes.status}).` };
     }
-
-    const rows: unknown = await dbRes.json().catch(() => null);
-    const recordId = Array.isArray(rows) && rows[0] && typeof rows[0].id === 'string' ? rows[0].id : undefined;
-    return { success: true, photoUrl, recordId };
+    return { success: true, photoPath };
   } catch {
     return { success: false, error: 'Sin conexión: la lectura se guardó solo en el teléfono.' };
   }

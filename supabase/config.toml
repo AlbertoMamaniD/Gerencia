@@ -1,0 +1,6 @@
+# Configuración mínima para desplegar con la CLI de Supabase.
+# project_id se completa con `supabase link --project-ref <ref>`.
+
+[functions.ocr-meter]
+# Exige un JWT válido en la llamada; la función además verifica que sea un usuario real.
+verify_jwt = true

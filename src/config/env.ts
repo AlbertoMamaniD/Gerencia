@@ -1,21 +1,24 @@
 /**
  * Variables de entorno públicas (EXPO_PUBLIC_*).
  * Deben leerse con el nombre literal para que Expo las inserte al compilar.
- * Nota: estas claves viajan dentro de la app; no colocar aquí secretos de servidor.
+ *
+ * IMPORTANTE: todo lo que esté aquí viaja dentro de la app y puede extraerse.
+ * Solo se usan la URL y la anon key de Supabase (públicas por diseño, protegidas por RLS).
+ * La clave de Gemini vive únicamente como secreto de la Edge Function "ocr-meter".
  */
 
 export const env = {
-  geminiApiKey: (process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '').trim(),
   supabaseUrl: (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, ''),
   supabaseAnonKey: (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim(),
 };
 
-export function isOcrConfigured(): boolean {
-  return env.geminiApiKey.length > 0;
-}
-
 export function isSupabaseConfigured(): boolean {
   return env.supabaseUrl.length > 0 && env.supabaseAnonKey.length > 0;
+}
+
+/** El OCR se hace en el servidor (Edge Function), así que depende de Supabase. */
+export function isOcrConfigured(): boolean {
+  return isSupabaseConfigured();
 }
 
 /** Solo el host (sin claves) para mostrarlo en Ajustes. */

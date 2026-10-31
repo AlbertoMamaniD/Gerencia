@@ -223,7 +223,7 @@ export default function SettingsScreen() {
             iconColor={ocrOk ? colors.success : colors.textMuted}
             iconBackground={ocrOk ? colors.successSoft : colors.surfaceMuted}
             title="Lectura automática (OCR)"
-            subtitle={ocrOk ? 'Google Gemini' : 'No configurado: lectura manual'}
+            subtitle={ocrOk ? 'En el servidor (Gemini)' : 'No configurado: lectura manual'}
             trailing={<Badge label={ocrOk ? 'Activo' : 'Inactivo'} tone={ocrOk ? 'success' : 'neutral'} />}
           />
         </View>

@@ -11,7 +11,7 @@ Aplicación móvil (Android / iOS) para controlar el consumo eléctrico del hoga
 | Pantalla | Qué hace |
 |---|---|
 | **Inicio** | Gasto del ciclo en Bs, progreso del presupuesto, proyección al cierre, potencia en vivo, mediciones eléctricas (V, A, Hz, cos φ), lectura del medidor e historial de 7 días. |
-| **Escanear** | Foto del medidor (cámara o galería) → lectura automática → el usuario **revisa y corrige** antes de calibrar. Funciona también con ingreso manual. Respaldo opcional en Supabase. |
+| **Escanear** | Foto del medidor (cámara o galería) → lectura automática en el servidor → el usuario **revisa y corrige** antes de calibrar. Funciona también con ingreso manual. Respaldo opcional y privado en Supabase. |
 | **Presupuesto** | Presupuesto mensual, aviso anticipado (70–90 %) y límite de sobrecarga en W, con validación. |
 | **Ajustes** | Tema (sistema / claro / oscuro), fuente de datos (simulación / ESP32), tarifa y día de inicio del ciclo, estado de servicios en la nube, notificación de prueba y reinicio de ciclo. |
 
@@ -57,12 +57,17 @@ src/
 │   ├── dashboard/       # BudgetHeroCard, LivePowerCard, TelemetryGrid, WeeklyConsumptionCard
 │   └── scanner/         # Viewfinder, ReadingReviewCard, CaptureHistory, ScanSteps
 ├── domain/              # Lógica pura y probada: facturación, medidor, alertas, validación
-├── services/            # ESP32, simulador, OCR (Gemini), Supabase, notificaciones
+├── services/            # ESP32, simulador, OCR, sesión y respaldo en Supabase, notificaciones
 ├── store/               # Store global, migraciones y almacenamiento agrupado
 ├── hooks/               # Lectura periódica, notificaciones, flujo del escáner, datos derivados
 ├── theme/               # Tokens, temas claro/oscuro, utilidades de color
 ├── config/              # Variables de entorno públicas
 └── utils/               # Formatos en español (Bs, kWh, fechas)
+supabase/
+├── schema.sql           # Esquema base
+├── migrations/          # Endurecimiento de seguridad (RLS, bucket privado, cuota OCR)
+├── functions/ocr-meter/ # Edge Function: OCR con Gemini sin exponer la clave
+└── tests/               # Pruebas de seguridad SQL
 ```
 
 ### Modelo del medidor
@@ -98,16 +103,48 @@ npm start              # servidor de desarrollo (Expo Go o development build)
 
 | Variable | Uso |
 |---|---|
-| `EXPO_PUBLIC_GEMINI_API_KEY` | Lectura automática del medidor (opcional; sin ella se ingresa a mano). |
-| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Respaldo de fotos y calibraciones (opcional). |
+| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Respaldo en la nube y lectura automática (opcional; sin ellas la app funciona con ingreso manual). |
 
-⚠️ Las variables `EXPO_PUBLIC_*` quedan dentro del APK. Usa una clave de Gemini con restricciones de uso y la anon key de Supabase con RLS activo (ver `supabase/schema.sql`).
+La clave de Gemini **no** va en la app: vive como secreto de la Edge Function (ver abajo).
+
+---
+
+## Seguridad
+
+| Riesgo | Protección |
+|---|---|
+| La anon key de Supabase es pública (va en el APK) | Cada teléfono inicia una **sesión anónima** propia; las políticas **RLS** solo permiten leer/escribir las filas y fotos de ese usuario. El rol `anon` no puede leer nada. |
+| Fotos del medidor visibles para cualquiera | Bucket **privado**, carpeta por usuario, solo JPEG ≤ 5 MB. |
+| Clave de Gemini extraíble del APK | El OCR corre en la **Edge Function `ocr-meter`**; la clave es un secreto del servidor. |
+| Abuso del OCR | Exige sesión de usuario + **cuota diaria** por usuario (30 por defecto) + límite de tamaño de imagen. |
+| Datos basura en la base | Restricciones `CHECK` en valores y longitudes; historial inmutable (sin UPDATE/DELETE). |
+| Funciones `SECURITY DEFINER` | `search_path` fijado. |
+| Tokens de sesión | Guardados cifrados con **SecureStore**; respaldo de Android desactivado. |
+| HTTP sin cifrar al ESP32 | Solo se permiten direcciones de **red local** (192.168.x.x, 10.x.x.x, 172.16–31.x.x, `*.local`). |
+
+El CI ejecuta las pruebas de seguridad en un PostgreSQL real en cada push (`scripts/test-supabase-sql.sh`).
+
+### Activar la seguridad en tu proyecto de Supabase (una sola vez)
+
+1. **SQL:** en *SQL Editor*, ejecuta `supabase/migrations/20261031000000_security_hardening.sql` (se puede repetir sin problema).
+2. **Sesiones anónimas:** *Authentication → Sign In / Providers* → activa **Allow anonymous sign-ins**. Recomendado: en *Authentication → Rate Limits* deja un límite bajo de registros anónimos por IP.
+3. **Edge Function del OCR:**
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <tu-project-ref>
+   npx supabase secrets set GEMINI_API_KEY=<clave-nueva-de-aistudio>
+   npx supabase functions deploy ocr-meter
+   ```
+4. **Rota la clave de Gemini anterior** en Google AI Studio: estuvo dentro de los APK de la versión 1.0.
+5. Borra `EXPO_PUBLIC_GEMINI_API_KEY` de tu `.env` (la app ya no la usa).
+
+Mientras no hagas los pasos 2–3, la app sigue funcionando: la lectura se ingresa a mano y se guarda en el teléfono.
 
 ---
 
 ## CI/CD
 
-- **`ci.yml`** (push y PR a `main`/`develop`): tipos → lint sin warnings → pruebas con cobertura (zona horaria de Bolivia) → expo-doctor → exportación del bundle Android y web.
+- **`ci.yml`** (push y PR a `main`/`develop`): tipos → lint sin warnings → pruebas con cobertura (zona horaria de Bolivia) → expo-doctor → pruebas de seguridad SQL (RLS) en PostgreSQL → chequeo de la Edge Function → búsqueda de claves expuestas → exportación del bundle Android y web.
 - **`eas-build.yml`** (manual): genera el APK en EAS. Requiere el secreto `EXPO_TOKEN`.
 
 Guía detallada de ejecución y compilación: [COMO_HACER_CORRER_Y_COMPILAR.md](./COMO_HACER_CORRER_Y_COMPILAR.md).

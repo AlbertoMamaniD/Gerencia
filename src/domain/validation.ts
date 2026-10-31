@@ -83,8 +83,18 @@ export function validateMeterReading(raw: string) {
   return validateNumberInRange(raw, { label: 'la lectura', unit: 'kWh', ...LIMITS.meterReadingKWh });
 }
 
+/** Rangos de red local (RFC 1918 + enlace local). */
+function isPrivateIPv4(octets: number[]): boolean {
+  const [a, b] = octets;
+  return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
+}
+
+export const LOCAL_ONLY_ERROR =
+  'Por seguridad solo se permiten direcciones de tu red local (192.168.x.x, 10.x.x.x o 172.16–31.x.x).';
+
 /**
- * Valida la dirección del ESP32: IPv4 o nombre de host, con puerto opcional.
+ * Valida la dirección del ESP32: IPv4 de red local o nombre de host local (ej. esp32.local),
+ * con puerto opcional. La conexión es HTTP sin cifrar, por eso no se permite salir a internet.
  * Quita el esquema http:// y barras finales.
  */
 export function validateHost(raw: string): ValidationResult<string> {
@@ -102,8 +112,11 @@ export function validateHost(raw: string): ValidationResult<string> {
 
   const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(name);
   if (ipv4) {
-    const valid = ipv4.slice(1).every((octet) => Number(octet) <= 255);
-    return valid ? { ok: true, value: host } : { ok: false, error: 'Cada número de la IP debe estar entre 0 y 255.' };
+    const octets = ipv4.slice(1).map(Number);
+    if (!octets.every((octet) => octet <= 255)) {
+      return { ok: false, error: 'Cada número de la IP debe estar entre 0 y 255.' };
+    }
+    return isPrivateIPv4(octets) ? { ok: true, value: host } : { ok: false, error: LOCAL_ONLY_ERROR };
   }
 
   // Si son solo dígitos y puntos pero no es una IPv4 completa, es una IP incompleta.
@@ -112,9 +125,12 @@ export function validateHost(raw: string): ValidationResult<string> {
   }
 
   const hostname = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
-  return hostname.test(name)
-    ? { ok: true, value: host }
-    : { ok: false, error: 'Ingresa una IP (ej. 192.168.4.1) o un nombre de host válido.' };
+  if (!hostname.test(name)) {
+    return { ok: false, error: 'Ingresa una IP (ej. 192.168.4.1) o un nombre de host válido.' };
+  }
+  // Nombres de red local: "esp32.local" (mDNS) o de una sola palabra ("medidor").
+  const isLocalName = /\.local$/i.test(name) || !name.includes('.');
+  return isLocalName ? { ok: true, value: host } : { ok: false, error: LOCAL_ONLY_ERROR };
 }
 
 function capitalize(text: string): string {

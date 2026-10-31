@@ -1,4 +1,5 @@
 import {
+  LOCAL_ONLY_ERROR,
   parseDecimal,
   validateBudget,
   validateCycleStartDay,
@@ -63,9 +64,19 @@ describe('validateHost', () => {
     ['http://192.168.4.1/', '192.168.4.1'],
     ['esp32.local', 'esp32.local'],
     ['10.0.0.5:8080', '10.0.0.5:8080'],
+    ['172.20.1.9', '172.20.1.9'],
+    ['169.254.1.1', '169.254.1.1'],
+    ['medidor', 'medidor'],
   ])('acepta "%s"', (raw, expected) => {
     expect(validateHost(raw)).toEqual({ ok: true, value: expected });
   });
+
+  it.each(['8.8.8.8', '172.32.0.1', '11.0.0.1', 'evil.example.com'])(
+    'por seguridad rechaza "%s" (fuera de la red local)',
+    (raw) => {
+      expect(validateHost(raw)).toEqual({ ok: false, error: LOCAL_ONLY_ERROR });
+    }
+  );
 
   it.each([
     ['', 'Ingresa la dirección IP del ESP32.'],
