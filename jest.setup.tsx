@@ -53,3 +53,13 @@ jest.mock('react-native-reanimated', () => {
     Easing: { inOut: () => identity, quad: identity },
   };
 });
+
+jest.mock('expo-router', () => ({
+  router: {
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+  },
+  useLocalSearchParams: () => ({}),
+  Link: ({ children }: { children: React.ReactNode }) => children,
+}));
