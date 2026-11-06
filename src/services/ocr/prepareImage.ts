@@ -5,7 +5,7 @@
 
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
-export const OCR_MAX_WIDTH = 1280;
+export const OCR_MAX_WIDTH = 1600;
 
 export interface PreparedImage {
   uri: string;
@@ -18,7 +18,7 @@ export async function prepareImageForOcr(uri: string, width: number | undefined)
     context.resize({ width: OCR_MAX_WIDTH });
   }
   const rendered = await context.renderAsync();
-  const result = await rendered.saveAsync({ compress: 0.7, format: SaveFormat.JPEG, base64: true });
+  const result = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG, base64: true });
   if (!result.base64) {
     throw new Error('No se pudo procesar la imagen.');
   }

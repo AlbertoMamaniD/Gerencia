@@ -77,6 +77,12 @@ export function ReadingReviewCard({ result, currentMeterKWh, ratePerKWh, saving,
           label="Diferencia"
           value={difference === null ? '—' : `${difference >= 0 ? '+' : '−'}${formatEnergy(Math.abs(difference), 1)}`}
         />
+        {result?.meterType ? (
+          <SummaryItem
+            label="Tipo detectado"
+            value={result.meterType === 'analog' ? 'Analógico (rodillos)' : 'Digital (LCD)'}
+          />
+        ) : null}
         {result?.meterSerial ? <SummaryItem label="N.º de serie" value={result.meterSerial} /> : null}
         <SummaryItem label="Valor a tarifa actual" value={value === null ? '—' : `Bs ${formatNumber(calculateCostBs(value, ratePerKWh))}`} />
       </View>

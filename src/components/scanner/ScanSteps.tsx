@@ -2,7 +2,11 @@ import { View } from 'react-native';
 import { AppText } from '@/components/ui';
 import { makeStyles, radius, spacing } from '@/theme';
 
-const STEPS = ['Enfoca los números del display, sin reflejos.', 'Toma la foto o elígela de tu galería.', 'Revisa la lectura y confirma.'];
+const STEPS = [
+  'Enfoca de cerca los números del visor, evitando reflejos del sol o sombras.',
+  'En medidores de rodillos, el último número rojo se calcula como decimal.',
+  'En medidores digitales, espera a que la pantalla marque kWh (no fecha u hora).',
+];
 
 export function ScanSteps() {
   const styles = useStyles();

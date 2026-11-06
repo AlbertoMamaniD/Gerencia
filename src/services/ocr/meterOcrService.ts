@@ -28,6 +28,7 @@ export interface OcrScanResult {
   detectedKWh: number;
   meterSerial: string | null;
   confidence: number | null;
+  meterType?: 'analog' | 'digital';
   model: string;
   durationMs: number;
 }
@@ -60,7 +61,11 @@ export function parseOcrText(text: unknown): Omit<OcrScanResult, 'model' | 'dura
     throw new OcrError('La foto no parece un medidor de luz. Enfoca el display del medidor.', 'not_a_meter');
   }
 
-  const kwh = typeof parsed.kwh === 'string' ? Number(parsed.kwh.replace(',', '.')) : parsed.kwh;
+  const kwhRaw =
+    typeof parsed.kwh === 'string'
+      ? parsed.kwh.replace(/\s+/g, '').replace(',', '.')
+      : parsed.kwh;
+  const kwh = typeof kwhRaw === 'string' ? Number(kwhRaw) : kwhRaw;
   if (typeof kwh !== 'number' || !Number.isFinite(kwh) || kwh <= 0 || kwh >= 100_000_000) {
     throw new OcrError('No se pudieron leer los números del medidor. Acércate y evita reflejos.', 'unreadable');
   }
@@ -68,10 +73,16 @@ export function parseOcrText(text: unknown): Omit<OcrScanResult, 'model' | 'dura
   const serial =
     typeof parsed.serial === 'string' && parsed.serial.trim() !== '' ? parsed.serial.trim().slice(0, 50) : null;
 
+  const meterType =
+    parsed.meter_type === 'analog' || parsed.meter_type === 'digital'
+      ? (parsed.meter_type as 'analog' | 'digital')
+      : undefined;
+
   return {
     detectedKWh: Math.round(kwh * 100) / 100,
     meterSerial: serial,
     confidence: normalizeConfidence(parsed.confidence),
+    ...(meterType ? { meterType } : {}),
   };
 }
 

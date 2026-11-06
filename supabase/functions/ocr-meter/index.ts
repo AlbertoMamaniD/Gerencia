@@ -11,25 +11,70 @@
 //   supabase secrets set GEMINI_API_KEY=<clave>
 //   supabase functions deploy ocr-meter
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest'];
+const MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
 const MAX_BASE64_CHARS = 4_000_000; // ≈ 3 MB de imagen
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png']);
 const DAILY_LIMIT = Number(Deno.env.get('OCR_DAILY_LIMIT') ?? '30');
 const GEMINI_TIMEOUT_MS = 25_000;
 
-const PROMPT = `Eres un lector óptico estricto de medidores eléctricos residenciales de Bolivia (CRE, DELAPAZ, ELFEC, SETAR).
-Analiza la imagen:
-1. Si NO es un medidor de energía eléctrica (persona, ropa, pantalla, pared, documento, etc.), responde solo:
+const PROMPT = `Eres un lector óptico experto de máxima precisión especializado en medidores de energía eléctrica residenciales e industriales de Bolivia (SETAR Tarija, CRE Santa Cruz, DELAPAZ La Paz, ELFEC Cochabamba, CESSA Sucre, SEPSA Potosí).
+
+OBJETIVO:
+Extraer con exactitud matemática la lectura acumulada en kWh (kilovatios-hora) y el número de serie del medidor.
+
+---
+REGLAS CRÍTICAS DE INTERPRETACIÓN:
+
+1. ¿ES UN MEDIDOR DE LUZ?
+- Si la imagen NO muestra ningún medidor eléctrico (persona, documento, pared lisa, vehículo, mascota, comida, pantalla de celular, etc.):
+  Responde ÚNICAMENTE: {"is_meter": false}
+- TOLERANCIA DE GABINETE / NICHO: En Bolivia (especialmente en Tarija), los medidores suelen estar empotrados en la fachada de la calle, dentro de nichos de cemento, cajas metálicas o gabinetes plásticos con visores de acrílico o vidrio que pueden tener rayones, polvo, reflejos de luz o sombras. Si el gabinete o cuerpo del medidor es visible detrás del visor, SÍ es un medidor (is_meter: true). No lo descartes por estar dentro de una caja o nicho.
+
+2. MEDIDORES ANALÓGICOS ELECTROMECÁNICOS (RUEDAS / TAMBORES GIRATORIOS):
+- Están compuestos por rodillos numéricos horizontales tipo odómetro (generalmente 5 o 6 rodillos).
+- REGLA DEL DÍGITO ROJO (DECIMAL):
+  * Si el último rodillo de la derecha (o los últimos rodillos) tiene COLOR ROJO, FONDO ROJO, MARCO ROJO, o está precedido por una coma/punto decimal: ESE DÍGITO ES LA FRACCIÓN DECIMAL (0.1 kWh).
+    Ejemplo: rodillos negros "0 1 4 5 2" seguidos de un rodillo rojo "7" = 1452.7 kWh (NUNCA 14527).
+  * Si TODOS los rodillos son del mismo color (típicamente todos negros con números blancos, o todos blancos con números negros) sin coma ni marco rojo, todos los dígitos son enteros.
+- RODILLOS A MEDIO GIRAR: Si un rodillo se encuentra entre dos dígitos (por ejemplo, el 4 está terminando de pasar y el 5 está empezando a asomar), toma SIEMPRE el número menor que ya completó la transición (el 4).
+- Ceros a la izquierda: Ignora ceros no significativos para el valor aritmético (ej. "00342" = 342).
+
+3. MEDIDORES ELECTRÓNICOS / DIGITALES (PANTALLA LCD O LED):
+- Las pantallas digitales alternan pantallas cíclicamente. Busca EXCLUSIVAMENTE la que represente la energía activa acumulada con la unidad "kWh", "Total kWh" o código OBIS "1.8.0" o "01".
+- Si la pantalla incluye coma o punto decimal visible (ej. "001234.5 kWh"), consérvalo como decimal (1234.5).
+- NUNCA confundas la lectura de kWh con:
+  * Horas (formato HH:MM:SS) o fechas (DD.MM.AA).
+  * Voltajes ("220V"), amperajes ("A"), frecuencia ("Hz") o potencia reactiva ("kVARh").
+  * Pantalla de encendido de todos los segmentos de prueba (ej. "888888").
+
+4. NÚMEROS A IGNORAR EN LA CARÁTULA:
+- Constantes de calibración: "1200 r/kWh", "600 rev/kWh", "1600 imp/kWh", "800 imp/kWh".
+- Datos de placa: "220V", "230V", "10(40)A", "5(60)A", "50Hz", "Clase 1", "Clase 2", "Monofásico", "Trifásico".
+- Normas: "NB", "IEC".
+
+5. NÚMERO DE SERIE DEL MEDIDOR:
+- Busca el número de identificación o serie impreso en la placa metálica o plástico del medidor (suele estar junto a un código de barras o precedido de "N°", "No.", "Serie", "SETAR", o grabado).
+- Si no es 100% legible, usa null.
+
+---
+FORMATO DE SALIDA (ESTRICTAMENTE JSON VÁLIDO, SIN MARKDOWN NI TEXTO EXTRA):
+Si NO es un medidor:
 {"is_meter": false}
-2. Si SÍ es un medidor (analógico de tambor o digital LCD), responde solo:
-{"is_meter": true, "kwh": number, "serial": string | null, "confidence": number}
-- "kwh": lectura acumulada en kWh tal como aparece en el display (sin inventar dígitos).
-- "serial": número de serie de la placa o null si no es legible.
-- "confidence": tu confianza de 0 a 100.
-Si es un medidor pero los dígitos no se leen, usa "kwh": null.
-Responde únicamente el JSON, sin markdown.`;
+
+Si SÍ es un medidor:
+{
+  "is_meter": true,
+  "kwh": number | null,
+  "serial": string | null,
+  "confidence": number,
+  "meter_type": "analog" | "digital" | "unknown"
+}
+* "kwh": número flotante o entero con la lectura real acumulada en kWh. Si la imagen es un medidor pero los dígitos están completamente ilegibles (por ejemplo por reflejo total directo o desenfoque extremo), usa null.
+* "serial": string con el número de serie o null.
+* "confidence": número entero de 0 a 100 indicando tu certeza sobre los dígitos de kWh leídos.
+* "meter_type": "analog" si es de tambores/rodillos mecánicos, "digital" si es pantalla LCD/LED, o "unknown".`;
 
 function json(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {

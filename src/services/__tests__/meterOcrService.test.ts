@@ -30,6 +30,17 @@ describe('parseOcrText', () => {
     });
   });
 
+  it('procesa tipo de medidor y números con espacios de rodillos', () => {
+    expect(
+      parseOcrText('{"is_meter":true,"kwh":"01 452.7","serial":"SETAR-99","confidence":95,"meter_type":"analog"}')
+    ).toEqual({
+      detectedKWh: 1452.7,
+      meterSerial: 'SETAR-99',
+      confidence: 95,
+      meterType: 'analog',
+    });
+  });
+
   it('rechaza fotos que no son medidores', () => {
     expect(() => parseOcrText('{"is_meter":false}')).toThrow(expect.objectContaining({ code: 'not_a_meter' }));
   });
