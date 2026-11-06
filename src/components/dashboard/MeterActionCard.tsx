@@ -39,7 +39,13 @@ export function MeterActionCard({ meterKWh, lastCalibrationTime, ratePerKWh }: M
           <AppText variant="caption" tone="muted">
             Última lectura
           </AppText>
-          <AppText variant="bodyStrong" tabular>
+          <AppText
+            variant="bodyStrong"
+            tabular
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
             {hasReading ? formatEnergy(meterKWh, 1) : 'Sin datos'}
           </AppText>
         </View>
@@ -48,7 +54,13 @@ export function MeterActionCard({ meterKWh, lastCalibrationTime, ratePerKWh }: M
           <AppText variant="caption" tone="muted">
             Actualización
           </AppText>
-          <AppText variant="bodyStrong" tone={lastCalibrationTime ? 'default' : 'secondary'} numberOfLines={1}>
+          <AppText
+            variant="bodyStrong"
+            tone={lastCalibrationTime ? 'default' : 'secondary'}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
             {timeLabel}
           </AppText>
         </View>
@@ -57,7 +69,14 @@ export function MeterActionCard({ meterKWh, lastCalibrationTime, ratePerKWh }: M
           <AppText variant="caption" tone="muted">
             Tarifa SETAR
           </AppText>
-          <AppText variant="bodyStrong" tone="primary" tabular>
+          <AppText
+            variant="bodyStrong"
+            tone="primary"
+            tabular
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
             Bs {formatNumber(ratePerKWh, 2)}
           </AppText>
         </View>
@@ -106,3 +125,4 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.border,
   },
 }));
+
