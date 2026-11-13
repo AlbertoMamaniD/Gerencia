@@ -15,7 +15,7 @@ export function MeterActionCard({ meterKWh, lastCalibrationTime, ratePerKWh }: M
   const styles = useStyles();
 
   const hasReading = meterKWh > 0;
-  const timeLabel = lastCalibrationTime ? formatRelativeTime(lastCalibrationTime) : 'Sin registrar este mes';
+  const timeLabel = lastCalibrationTime ? formatRelativeTime(lastCalibrationTime) : 'Foto pendiente';
 
   return (
     <Card style={styles.card} testID="meter-action-card">
@@ -56,7 +56,7 @@ export function MeterActionCard({ meterKWh, lastCalibrationTime, ratePerKWh }: M
           </AppText>
           <AppText
             variant="bodyStrong"
-            tone={lastCalibrationTime ? 'default' : 'secondary'}
+            tone={lastCalibrationTime ? 'default' : 'warning'}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.8}

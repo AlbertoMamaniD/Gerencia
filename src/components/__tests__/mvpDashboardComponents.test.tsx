@@ -26,7 +26,7 @@ describe('MeterActionCard (MVP)', () => {
     );
 
     expect(screen.getByText('Sin datos')).toBeOnTheScreen();
-    expect(screen.getByText('Sin registrar este mes')).toBeOnTheScreen();
+    expect(screen.getByText('Foto pendiente')).toBeOnTheScreen();
   });
 });
 
