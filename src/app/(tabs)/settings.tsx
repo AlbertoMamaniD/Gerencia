@@ -4,18 +4,28 @@ import Constants from 'expo-constants';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
-import { AppText, Banner, Button, Card, Chip, Icon, SectionHeader, SegmentedControl, TextField } from '@/components/ui';
+import {
+  AppText,
+  Banner,
+  Button,
+  Card,
+  Chip,
+  IconCircle,
+  SectionHeader,
+  SegmentedControl,
+  TextField,
+} from '@/components/ui';
 import { ConnectionMode } from '@/domain/types';
 import { validateCycleStartDay, validateHost, validateRate } from '@/domain/validation';
 import { notify, vibrate } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
 import { formatRelativeTime, toInputValue } from '@/utils/formatters';
-import { makeStyles, spacing, ThemePreference, useTheme, withAlpha } from '@/theme';
+import { makeStyles, radius, spacing, ThemePreference, useTheme, withAlpha } from '@/theme';
 
 const TARIFF_PRESETS = [
-  { rate: 0.85, label: 'Casa / Hogar (Bs 0,85)' },
-  { rate: 0.65, label: 'Tarifa Dignidad (Bs 0,65)' },
-  { rate: 1.05, label: 'Tienda / Negocio (Bs 1,05)' },
+  { rate: 0.85, label: 'Casa (Bs 0,85)', fullLabel: 'Casa o departamento estándar' },
+  { rate: 0.65, label: 'Dignidad (Bs 0,65)', fullLabel: 'Tarifa Dignidad con subsidio' },
+  { rate: 1.05, label: 'Negocio (Bs 1,05)', fullLabel: 'Tienda o comercio' },
 ];
 
 const CYCLE_PRESETS = [
@@ -86,17 +96,21 @@ export default function SettingsScreen() {
   };
 
   const confirmResetCycle = () => {
-    Alert.alert('Reiniciar ciclo de facturación', '¿Quieres reiniciar el contador de consumo a cero para empezar un nuevo ciclo?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Reiniciar',
-        style: 'destructive',
-        onPress: () => {
-          resetCycle();
-          flash('Ciclo reiniciado.');
+    Alert.alert(
+      'Reiniciar ciclo de facturación',
+      '¿Quieres reiniciar el contador de consumo a cero para empezar un nuevo ciclo?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Reiniciar',
+          style: 'destructive',
+          onPress: () => {
+            resetCycle();
+            flash('Ciclo reiniciado.');
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const sendTest = async () => {
@@ -178,20 +192,35 @@ export default function SettingsScreen() {
 
       <Card style={styles.card}>
         <SectionHeader
-          title="Tarifa de SETAR y fecha de cobro"
-          description="Ajusta el precio por kWh y el día que inicia tu ciclo de facturación."
+          title="Tarifa de SETAR y facturación"
+          description="Configura el costo del kWh y el día en que renueva tu factura mensual."
         />
 
-        <View style={styles.group}>
+        <View style={styles.helpBox}>
+          <IconCircle
+            name="lightbulb-on-outline"
+            color={colors.primary}
+            background={withAlpha(colors.primary, 0.15)}
+            size={36}
+          />
+          <View style={styles.helpBoxText}>
+            <AppText variant="bodyStrong">Tarifa residencial en Tarija</AppText>
+            <AppText variant="small" tone="secondary">
+              El 90% de los hogares pagan la tarifa estándar de Bs 0,85 por kWh. Para consumos menores a 70 kWh (~Bs 50), SETAR aplica Tarifa Dignidad (Bs 0,65).
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.sectionBlock}>
           <AppText variant="caption" tone="muted">
-            Tarifas habituales de SETAR en Tarija
+            Tarifas sugeridas de SETAR
           </AppText>
-          <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Tarifas sugeridas de SETAR">
+          <View style={styles.chipsRow} accessibilityRole="radiogroup" accessibilityLabel="Tarifas sugeridas de SETAR">
             {TARIFF_PRESETS.map((preset) => (
               <Chip
                 key={preset.rate}
                 label={preset.label}
-                accessibilityLabel={preset.label}
+                accessibilityLabel={preset.fullLabel}
                 selected={rateResult.ok && rateResult.value === preset.rate}
                 onPress={() => {
                   setRateText(toInputValue(preset.rate));
@@ -200,35 +229,26 @@ export default function SettingsScreen() {
               />
             ))}
           </View>
+          <TextField
+            label="Tarifa por kWh"
+            prefix="Bs"
+            suffix="/ kWh"
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            value={rateText}
+            onChangeText={setRateText}
+            error={showTariffErrors && !rateResult.ok ? rateResult.error : null}
+            testID="rate-input"
+          />
         </View>
 
-        <View style={styles.helpBox}>
-          <Icon name="information-outline" size={20} color={colors.primary} />
-          <View style={styles.helpBoxText}>
-            <AppText variant="bodyStrong">¿Cómo saber cuánto te cobra SETAR?</AppText>
-            <AppText variant="small" tone="secondary">
-              En Tarija, el 90% de las casas pagan la tarifa domiciliaria estándar de Bs 0,85 por kWh. Si tu consumo es bajo (menos de 70 kWh), SETAR aplica la Tarifa Dignidad (Bs 0,65). Si tienes dudas, deja seleccionado Casa / Hogar (Bs 0,85).
-            </AppText>
-          </View>
-        </View>
+        <View style={styles.divider} />
 
-        <TextField
-          label="Tarifa por kWh"
-          prefix="Bs"
-          suffix="/ kWh"
-          keyboardType="decimal-pad"
-          inputMode="decimal"
-          value={rateText}
-          onChangeText={setRateText}
-          error={showTariffErrors && !rateResult.ok ? rateResult.error : null}
-          testID="rate-input"
-        />
-
-        <View style={styles.group}>
+        <View style={styles.sectionBlock}>
           <AppText variant="caption" tone="muted">
             Día que inicia tu factura (entre 1 y 28)
           </AppText>
-          <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Días sugeridos de ciclo">
+          <View style={styles.chipsRow} accessibilityRole="radiogroup" accessibilityLabel="Días sugeridos de ciclo">
             {CYCLE_PRESETS.map((preset) => (
               <Chip
                 key={preset.day}
@@ -242,20 +262,19 @@ export default function SettingsScreen() {
               />
             ))}
           </View>
+          <TextField
+            label="Día de inicio del ciclo"
+            suffix="de cada mes"
+            keyboardType="number-pad"
+            inputMode="numeric"
+            maxLength={2}
+            value={dayText}
+            onChangeText={setDayText}
+            error={showTariffErrors && !dayResult.ok ? dayResult.error : null}
+            helperText="Día del mes (1 al 28) en que se emite o renueva tu factura."
+            testID="cycle-day-input"
+          />
         </View>
-
-        <TextField
-          label="Día de inicio del ciclo"
-          suffix="de cada mes"
-          keyboardType="number-pad"
-          inputMode="numeric"
-          maxLength={2}
-          value={dayText}
-          onChangeText={setDayText}
-          error={showTariffErrors && !dayResult.ok ? dayResult.error : null}
-          helperText="Día del mes (1 al 28) en que se emite o renueva tu factura."
-          testID="cycle-day-input"
-        />
 
         <Button
           label="Guardar tarifa"
@@ -287,29 +306,37 @@ export default function SettingsScreen() {
 
 const useStyles = makeStyles(({ colors }) => ({
   card: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   group: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  chips: {
+  sectionBlock: {
+    gap: spacing.md,
+  },
+  chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  divider: {
+    height: 1,
+    backgroundColor: withAlpha(colors.border, 0.6),
+    marginVertical: spacing.xxs,
+  },
   helpBox: {
     flexDirection: 'row',
     gap: spacing.md,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     backgroundColor: withAlpha(colors.primary, 0.08),
     borderWidth: 1,
-    borderColor: withAlpha(colors.primary, 0.2),
-    padding: spacing.md,
-    borderRadius: 12,
+    borderColor: withAlpha(colors.primary, 0.22),
+    padding: spacing.lg,
+    borderRadius: radius.md,
   },
   helpBoxText: {
     flex: 1,
-    gap: spacing.xs,
+    gap: spacing.xxs,
   },
   statusRow: {
     flexDirection: 'row',
