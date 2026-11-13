@@ -42,7 +42,7 @@ export function useTelemetryPolling(): void {
         if (!cancelled) useEnergyStore.getState().ingestReading(reading);
       } catch (err) {
         if (!cancelled) {
-          const message = err instanceof Error ? err.message : 'No se pudo leer el ESP32.';
+          const message = err instanceof Error ? err.message : 'No se pudo leer el sensor.';
           useEnergyStore.getState().reportConnectionError(message);
         }
       } finally {

@@ -75,7 +75,7 @@ describe('useTelemetryPolling', () => {
       powerFactor: 1,
       timestamp: 1,
     });
-    mockedFetch.mockRejectedValueOnce(new Error('El ESP32 no respondió en 3 s.'));
+    mockedFetch.mockRejectedValueOnce(new Error('El sensor no respondió en 3 s.'));
 
     await renderHook(() => useTelemetryPolling());
     await act(async () => {});
@@ -87,7 +87,7 @@ describe('useTelemetryPolling', () => {
     });
     expect(useEnergyStore.getState().status).toMatchObject({
       isConnected: false,
-      errorMessage: 'El ESP32 no respondió en 3 s.',
+      errorMessage: 'El sensor no respondió en 3 s.',
     });
   });
 });

@@ -99,7 +99,7 @@ export const LOCAL_ONLY_ERROR =
  */
 export function validateHost(raw: string): ValidationResult<string> {
   const host = raw.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-  if (host === '') return { ok: false, error: 'Ingresa la dirección IP del ESP32.' };
+  if (host === '') return { ok: false, error: 'Ingresa la dirección IP del sensor.' };
 
   const [name, port, ...rest] = host.split(':');
   if (rest.length > 0) return { ok: false, error: 'La dirección tiene un formato inválido.' };

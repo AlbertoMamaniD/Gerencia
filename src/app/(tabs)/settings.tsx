@@ -44,8 +44,8 @@ export default function SettingsScreen() {
   const changeMode = (mode: ConnectionMode) => {
     if (mode === 'hardware' && hasDemoData) {
       Alert.alert(
-        'Conectar medidor real',
-        'Se borrarán los datos de demostración para empezar a medir tu consumo real. ¿Continuar?',
+        'Conectar sensor Wi-Fi',
+        'Se empezará a medir con tu sensor en tiempo real. ¿Continuar?',
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Continuar', onPress: () => updateConnection({ mode }) },
@@ -61,7 +61,7 @@ export default function SettingsScreen() {
     if (!hostResult.ok) return;
     setHostText(hostResult.value);
     updateConnection({ host: hostResult.value });
-    flash('Dirección del ESP32 guardada.');
+    flash('Dirección del sensor guardada.');
   };
 
   const saveTariff = () => {
@@ -114,20 +114,20 @@ export default function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <SectionHeader title="Fuente de datos" description="De dónde vienen las mediciones en vivo." />
+        <SectionHeader title="Fuente de datos" description="Cómo mide el consumo la aplicación." />
         <SegmentedControl<ConnectionMode>
           accessibilityLabel="Fuente de datos"
           value={connection.mode}
           onChange={changeMode}
           options={[
-            { value: 'simulation', label: 'Simulación', icon: 'flask-outline' },
-            { value: 'hardware', label: 'ESP32', icon: 'chip' },
+            { value: 'simulation', label: 'Lectura por foto', icon: 'camera-outline' },
+            { value: 'hardware', label: 'Sensor Wi-Fi', icon: 'wifi' },
           ]}
         />
         {connection.mode === 'hardware' ? (
           <View style={styles.group}>
             <TextField
-              label="Dirección IP del ESP32"
+              label="Dirección IP del sensor"
               prefix="http://"
               placeholder="192.168.4.1"
               autoCapitalize="none"
@@ -136,7 +136,7 @@ export default function SettingsScreen() {
               value={hostText}
               onChangeText={setHostText}
               error={showHostError && !hostResult.ok ? hostResult.error : null}
-              helperText="El teléfono y el ESP32 deben estar en la misma red Wi-Fi."
+              helperText="El teléfono y el sensor deben estar conectados a la misma red Wi-Fi."
               testID="host-input"
             />
             <Button
@@ -157,7 +157,7 @@ export default function SettingsScreen() {
           </View>
         ) : (
           <AppText variant="small" tone="secondary">
-            Datos de ejemplo para probar la app sin hardware.
+            Modo sin sensor: toma la foto de tu medidor cada mes para controlar tu consumo de SETAR.
           </AppText>
         )}
       </Card>

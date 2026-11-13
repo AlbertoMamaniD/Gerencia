@@ -23,13 +23,13 @@ function toFiniteNumber(value: unknown): number | null {
 /** Valida el JSON del ESP32. Los campos obligatorios son potencia y energía. */
 export function parseEsp32Payload(data: unknown, now: number): PZEMReading {
   if (!data || typeof data !== 'object') {
-    throw new Esp32Error('El ESP32 respondió con datos inválidos.', 'payload');
+    throw new Esp32Error('El sensor respondió con datos inválidos.', 'payload');
   }
   const raw = data as Record<string, unknown>;
   const power = toFiniteNumber(raw.power);
   const energy = toFiniteNumber(raw.energy);
   if (power === null || energy === null || power < 0 || energy < 0) {
-    throw new Esp32Error('El ESP32 no envió potencia o energía válidas.', 'payload');
+    throw new Esp32Error('El sensor no envió potencia o energía válidas.', 'payload');
   }
 
   const pf = toFiniteNumber(raw.powerFactor) ?? toFiniteNumber(raw.pf);
@@ -64,16 +64,16 @@ export async function fetchEsp32Reading(
       signal: controller.signal,
     });
     if (!response.ok) {
-      throw new Esp32Error(`El ESP32 respondió con error ${response.status}.`, 'http');
+      throw new Esp32Error(`El sensor respondió con error ${response.status}.`, 'http');
     }
     const data: unknown = await response.json().catch(() => null);
     return parseEsp32Payload(data, now());
   } catch (err) {
     if (err instanceof Esp32Error) throw err;
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Esp32Error(`El ESP32 no respondió en ${Math.round(timeoutMs / 1000)} s.`, 'timeout');
+      throw new Esp32Error(`El sensor no respondió en ${Math.round(timeoutMs / 1000)} s.`, 'timeout');
     }
-    throw new Esp32Error('No se pudo conectar con el ESP32. Verifica la IP y la red Wi-Fi.', 'network');
+    throw new Esp32Error('No se pudo conectar con el sensor. Verifica la IP y la red Wi-Fi.', 'network');
   } finally {
     clearTimeout(timer);
   }
