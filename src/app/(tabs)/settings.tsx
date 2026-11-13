@@ -4,14 +4,29 @@ import Constants from 'expo-constants';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
-import { AppText, Badge, Banner, Button, Card, ListRow, SectionHeader, SegmentedControl, TextField } from '@/components/ui';
-import { getSupabaseHost, isOcrConfigured, isSupabaseConfigured } from '@/config/env';
+import {
+  AppText,
+  Banner,
+  Button,
+  Card,
+  Chip,
+  IconCircle,
+  SectionHeader,
+  SegmentedControl,
+  TextField,
+} from '@/components/ui';
 import { ConnectionMode } from '@/domain/types';
 import { validateCycleStartDay, validateHost, validateRate } from '@/domain/validation';
 import { notify, vibrate } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
 import { formatRelativeTime, toInputValue } from '@/utils/formatters';
-import { makeStyles, spacing, ThemePreference, useTheme } from '@/theme';
+import { makeStyles, radius, spacing, ThemePreference, useTheme, withAlpha } from '@/theme';
+
+const TARIFF_PRESETS = [
+  { rate: 0.85, label: 'Casa (Bs 0,85)', fullLabel: 'Casa o departamento estándar' },
+  { rate: 0.65, label: 'Dignidad (Bs 0,65)', fullLabel: 'Tarifa Dignidad con subsidio' },
+  { rate: 1.05, label: 'Negocio (Bs 1,05)', fullLabel: 'Tienda o comercio' },
+];
 
 export default function SettingsScreen() {
   const styles = useStyles();
@@ -46,8 +61,8 @@ export default function SettingsScreen() {
   const changeMode = (mode: ConnectionMode) => {
     if (mode === 'hardware' && hasDemoData) {
       Alert.alert(
-        'Conectar medidor real',
-        'Se borrarán los datos de demostración para empezar a medir tu consumo real. ¿Continuar?',
+        'Conectar sensor Wi-Fi',
+        'Se empezará a medir con tu sensor en tiempo real. ¿Continuar?',
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Continuar', onPress: () => updateConnection({ mode }) },
@@ -63,28 +78,33 @@ export default function SettingsScreen() {
     if (!hostResult.ok) return;
     setHostText(hostResult.value);
     updateConnection({ host: hostResult.value });
-    flash('Dirección del ESP32 guardada.');
+    flash('Dirección del sensor guardada.');
   };
 
   const saveTariff = () => {
     setShowTariffErrors(true);
     if (!rateResult.ok || !dayResult.ok) return;
     updateBudget({ ratePerKWh: rateResult.value, billingCycleStartDay: dayResult.value });
+    setShowTariffErrors(false);
     flash('Tarifa y ciclo guardados.');
   };
 
   const confirmResetCycle = () => {
-    Alert.alert('Reiniciar ciclo', 'El consumo del ciclo volverá a cero. El historial diario se conserva.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Reiniciar',
-        style: 'destructive',
-        onPress: () => {
-          resetCycle();
-          flash('Ciclo reiniciado.');
+    Alert.alert(
+      'Reiniciar ciclo de facturación',
+      '¿Quieres reiniciar el contador de consumo a cero para empezar un nuevo ciclo?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Reiniciar',
+          style: 'destructive',
+          onPress: () => {
+            resetCycle();
+            flash('Ciclo reiniciado.');
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const sendTest = async () => {
@@ -92,14 +112,12 @@ export default function SettingsScreen() {
     setMessage(sent ? 'Notificación enviada.' : 'No se pudo enviar. Revisa el permiso de notificaciones.');
   };
 
-  const supabaseOk = isSupabaseConfigured();
-  const ocrOk = isOcrConfigured();
   const version = Constants.expoConfig?.version ?? '—';
 
   return (
     <Screen
       testID="settings-screen"
-      header={<ScreenHeader title="Ajustes" subtitle="Medidor, tarifa y apariencia" trailing={<ConnectionPill />} />}
+      header={<ScreenHeader title="Ajustes" subtitle="Tarifa de SETAR y preferencias" trailing={<ConnectionPill />} />}
     >
       {message ? <Banner tone="success" title={message} onDismiss={() => setMessage(null)} /> : null}
 
@@ -118,20 +136,20 @@ export default function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <SectionHeader title="Fuente de datos" description="De dónde vienen las mediciones en vivo." />
+        <SectionHeader title="Fuente de datos" description="Cómo mide el consumo la aplicación." />
         <SegmentedControl<ConnectionMode>
           accessibilityLabel="Fuente de datos"
           value={connection.mode}
           onChange={changeMode}
           options={[
-            { value: 'simulation', label: 'Simulación', icon: 'flask-outline' },
-            { value: 'hardware', label: 'ESP32', icon: 'chip' },
+            { value: 'simulation', label: 'Lectura por foto', icon: 'camera-outline' },
+            { value: 'hardware', label: 'Sensor Wi-Fi', icon: 'wifi' },
           ]}
         />
         {connection.mode === 'hardware' ? (
           <View style={styles.group}>
             <TextField
-              label="Dirección IP del ESP32"
+              label="Dirección IP del sensor"
               prefix="http://"
               placeholder="192.168.4.1"
               autoCapitalize="none"
@@ -140,7 +158,7 @@ export default function SettingsScreen() {
               value={hostText}
               onChangeText={setHostText}
               error={showHostError && !hostResult.ok ? hostResult.error : null}
-              helperText="El teléfono y el ESP32 deben estar en la misma red Wi-Fi."
+              helperText="El teléfono y el sensor deben estar conectados a la misma red Wi-Fi."
               testID="host-input"
             />
             <Button
@@ -161,36 +179,80 @@ export default function SettingsScreen() {
           </View>
         ) : (
           <AppText variant="small" tone="secondary">
-            Datos de ejemplo para probar la app sin hardware.
+            Modo sin sensor: toma la foto de tu medidor cada mes para controlar tu consumo de SETAR.
           </AppText>
         )}
       </Card>
 
       <Card style={styles.card}>
-        <SectionHeader title="Tarifa y ciclo" description="Según tu factura de luz." />
-        <TextField
-          label="Tarifa por kWh"
-          prefix="Bs"
-          suffix="/ kWh"
-          keyboardType="decimal-pad"
-          inputMode="decimal"
-          value={rateText}
-          onChangeText={setRateText}
-          error={showTariffErrors && !rateResult.ok ? rateResult.error : null}
-          testID="rate-input"
+        <SectionHeader
+          title="Tarifa de SETAR y facturación"
+          description="Configura el costo del kWh y el día en que renueva tu factura mensual."
         />
-        <TextField
-          label="Día de inicio del ciclo"
-          suffix="de cada mes"
-          keyboardType="number-pad"
-          inputMode="numeric"
-          maxLength={2}
-          value={dayText}
-          onChangeText={setDayText}
-          error={showTariffErrors && !dayResult.ok ? dayResult.error : null}
-          helperText="Entre 1 y 28."
-          testID="cycle-day-input"
-        />
+
+        <View style={styles.helpBox}>
+          <IconCircle
+            name="lightbulb-on-outline"
+            color={colors.primary}
+            background={withAlpha(colors.primary, 0.15)}
+            size={36}
+          />
+          <View style={styles.helpBoxText}>
+            <AppText variant="bodyStrong">Tarifa residencial en Tarija</AppText>
+            <AppText variant="small" tone="secondary">
+              El 90% de los hogares pagan la tarifa estándar de Bs 0,85 por kWh. Para consumos menores a 70 kWh (~Bs 50), SETAR aplica Tarifa Dignidad (Bs 0,65).
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.sectionBlock}>
+          <AppText variant="caption" tone="muted">
+            Tarifas sugeridas de SETAR
+          </AppText>
+          <View style={styles.chipsRow} accessibilityRole="radiogroup" accessibilityLabel="Tarifas sugeridas de SETAR">
+            {TARIFF_PRESETS.map((preset) => (
+              <Chip
+                key={preset.rate}
+                label={preset.label}
+                accessibilityLabel={preset.fullLabel}
+                selected={rateResult.ok && rateResult.value === preset.rate}
+                onPress={() => {
+                  setRateText(toInputValue(preset.rate));
+                  setShowTariffErrors(false);
+                }}
+              />
+            ))}
+          </View>
+          <TextField
+            label="Tarifa por kWh"
+            prefix="Bs"
+            suffix="/ kWh"
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            value={rateText}
+            onChangeText={setRateText}
+            error={showTariffErrors && !rateResult.ok ? rateResult.error : null}
+            testID="rate-input"
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.sectionBlock}>
+          <TextField
+            label="Día de inicio del ciclo"
+            suffix="de cada mes"
+            keyboardType="number-pad"
+            inputMode="numeric"
+            maxLength={2}
+            value={dayText}
+            onChangeText={setDayText}
+            error={showTariffErrors && !dayResult.ok ? dayResult.error : null}
+            helperText="La mayoría de hogares usa el día 1. Puedes ajustarlo según tu aviso de SETAR (1 al 28)."
+            testID="cycle-day-input"
+          />
+        </View>
+
         <Button
           label="Guardar tarifa"
           variant="secondary"
@@ -207,29 +269,6 @@ export default function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <SectionHeader title="Servicios en la nube" />
-        <View>
-          <ListRow
-            divider
-            icon="database-outline"
-            iconColor={supabaseOk ? colors.success : colors.textMuted}
-            iconBackground={supabaseOk ? colors.successSoft : colors.surfaceMuted}
-            title="Respaldo de fotos"
-            subtitle={supabaseOk ? (getSupabaseHost() ?? 'Supabase') : 'No configurado'}
-            trailing={<Badge label={supabaseOk ? 'Activo' : 'Inactivo'} tone={supabaseOk ? 'success' : 'neutral'} />}
-          />
-          <ListRow
-            icon="text-recognition"
-            iconColor={ocrOk ? colors.success : colors.textMuted}
-            iconBackground={ocrOk ? colors.successSoft : colors.surfaceMuted}
-            title="Lectura automática (OCR)"
-            subtitle={ocrOk ? 'En el servidor (Gemini)' : 'No configurado: lectura manual'}
-            trailing={<Badge label={ocrOk ? 'Activo' : 'Inactivo'} tone={ocrOk ? 'success' : 'neutral'} />}
-          />
-        </View>
-      </Card>
-
-      <Card style={styles.card}>
         <SectionHeader title="Acciones" />
         <Button label="Probar notificación" variant="secondary" icon="bell-outline" onPress={() => void sendTest()} />
         <Button label="Reiniciar ciclo de facturación" variant="danger" icon="restart" onPress={confirmResetCycle} />
@@ -242,12 +281,39 @@ export default function SettingsScreen() {
   );
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   card: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   group: {
     gap: spacing.md,
+  },
+  sectionBlock: {
+    gap: spacing.md,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: withAlpha(colors.border, 0.6),
+    marginVertical: spacing.xxs,
+  },
+  helpBox: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+    backgroundColor: withAlpha(colors.primary, 0.08),
+    borderWidth: 1,
+    borderColor: withAlpha(colors.primary, 0.22),
+    padding: spacing.lg,
+    borderRadius: radius.md,
+  },
+  helpBoxText: {
+    flex: 1,
+    gap: spacing.xxs,
   },
   statusRow: {
     flexDirection: 'row',

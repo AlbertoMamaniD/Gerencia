@@ -99,7 +99,7 @@ interface RecognizeOptions {
   resetSession?: () => Promise<void>;
 }
 
-function errorForStatus(status: number): OcrError {
+function errorForStatus(status: number, errorKey?: string): OcrError {
   switch (status) {
     case 404:
     case 503:
@@ -107,6 +107,9 @@ function errorForStatus(status: number): OcrError {
     case 413:
       return new OcrError('La foto es demasiado pesada. Intenta con otra.', 'too_large');
     case 429:
+      if (errorKey === 'provider_quota') {
+        return new OcrError(`El servicio de IA está con alta demanda temporalmente. Espera unos segundos o ${MANUAL_HINT.toLowerCase()}`, 'quota');
+      }
       return new OcrError(`Alcanzaste el límite de lecturas automáticas por hoy. ${MANUAL_HINT}`, 'quota');
     default:
       return new OcrError(`El servicio de lectura respondió con error ${status}. ${MANUAL_HINT}`, 'server');
@@ -175,7 +178,10 @@ export async function recognizeMeterReading(options: RecognizeOptions): Promise<
     await resetSession();
     response = await call();
   }
-  if (!response.ok) throw errorForStatus(response.status);
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw errorForStatus(response.status, errorBody?.error);
+  }
 
   const body = (await response.json().catch(() => null)) as { text?: unknown; model?: unknown } | null;
   const result = parseOcrText(body?.text);

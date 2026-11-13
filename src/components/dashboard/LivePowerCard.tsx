@@ -64,6 +64,16 @@ export function LivePowerCard({ history, currentPowerW, maxPowerW }: LivePowerCa
         </AppText>
       </View>
 
+      {currentPowerW !== null ? (
+        <AppText variant="caption" tone="secondary">
+          {currentPowerW < 350
+            ? '💡 Consumo base: artefactos en reposo o luces encendidas.'
+            : currentPowerW < 1600
+              ? '⚡ Consumo normal: electrodomésticos habituales en uso.'
+              : '🔥 Consumo elevado: artefactos de alta demanda (ducha, aire o pava).'}
+        </AppText>
+      ) : null}
+
       <View
         style={styles.chartBox}
         onLayout={onLayout}

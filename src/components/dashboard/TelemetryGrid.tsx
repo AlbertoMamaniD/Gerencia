@@ -50,7 +50,7 @@ function hasValue(value: number | undefined): value is number {
 }
 
 function powerFactorHint(pf: number): string {
-  if (pf >= 0.95) return 'Excelente';
+  if (pf >= 0.95) return 'Excelente (eficiente)';
   if (pf >= 0.85) return 'Aceptable';
   return 'Bajo (carga inductiva)';
 }
@@ -79,14 +79,14 @@ export function TelemetryGrid({ reading, meterKWh, cycleKWh, lastSyncTime }: Tel
           <Tile
             icon="sine-wave"
             color={colors.voltage}
-            label="Tensión"
+            label="Tensión (Voltaje)"
             value={hasValue(reading?.voltage) ? formatVoltage(reading.voltage) : empty}
             hint={hasValue(reading?.voltage) ? voltageHint(reading.voltage) : 'Sin dato'}
           />
           <Tile
             icon="current-ac"
             color={colors.current}
-            label="Corriente"
+            label="Corriente (Amperios)"
             value={reading ? formatCurrent(reading.current) : empty}
             hint="Carga actual"
           />
@@ -95,7 +95,7 @@ export function TelemetryGrid({ reading, meterKWh, cycleKWh, lastSyncTime }: Tel
           <Tile
             icon="pulse"
             color={colors.frequency}
-            label="Frecuencia"
+            label="Frecuencia (Red)"
             value={hasValue(reading?.frequency) ? formatFrequency(reading.frequency) : empty}
             hint={hasValue(reading?.frequency) ? 'Red de 50 Hz' : 'Sin dato'}
           />

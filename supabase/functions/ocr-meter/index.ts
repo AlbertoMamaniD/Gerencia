@@ -13,7 +13,14 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+const MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
+  'gemini-3.5-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-flash-latest',
+];
 const MAX_BASE64_CHARS = 4_000_000; // ≈ 3 MB de imagen
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png']);
 const DAILY_LIMIT = Number(Deno.env.get('OCR_DAILY_LIMIT') ?? '30');
@@ -117,6 +124,7 @@ Deno.serve(async (req) => {
   if (allowed !== true) return json(429, { error: 'quota_exceeded' });
 
   // 4. Gemini (con modelos alternativos si uno no está disponible).
+  let lastQuotaError = false;
   for (const model of MODELS) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
@@ -131,7 +139,11 @@ Deno.serve(async (req) => {
         signal: controller.signal,
       });
       if (res.status === 404 || res.status >= 500) continue;
-      if (res.status === 429 || res.status === 403) return json(429, { error: 'provider_quota' });
+      if (res.status === 429) {
+        lastQuotaError = true;
+        continue;
+      }
+      if (res.status === 403) return json(429, { error: 'provider_quota' });
       if (!res.ok) return json(502, { error: 'provider_error' });
 
       const data = await res.json();
@@ -144,5 +156,6 @@ Deno.serve(async (req) => {
       clearTimeout(timer);
     }
   }
+  if (lastQuotaError) return json(429, { error: 'provider_quota' });
   return json(502, { error: 'provider_unavailable' });
 });

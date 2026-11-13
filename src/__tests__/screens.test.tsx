@@ -36,9 +36,9 @@ describe('Inicio', () => {
     expect(screen.queryByText('Presupuesto agotado')).toBeNull();
   });
 
-  it('avisa si el ESP32 no responde', async () => {
+  it('avisa si el sensor no responde', async () => {
     useEnergyStore.setState({ connection: { mode: 'hardware', host: '1.2.3.4', pollingIntervalMs: 2000 } });
-    useEnergyStore.getState().reportConnectionError('El ESP32 no respondió en 3 s.');
+    useEnergyStore.getState().reportConnectionError('El sensor no respondió en 3 s.');
     await renderWithProviders(<DashboardScreen />, 'dark');
     expect(screen.getByText('Sin conexión con el medidor')).toBeOnTheScreen();
     expect(screen.getByText('Sin conexión')).toBeOnTheScreen();
@@ -119,7 +119,7 @@ describe('Ajustes', () => {
   it('pide confirmación antes de borrar los datos de demostración', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     await renderWithProviders(<SettingsScreen />);
-    await fireEvent.press(screen.getByRole('radio', { name: 'ESP32' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Sensor Wi-Fi' }));
     expect(alertSpy).toHaveBeenCalled();
     expect(useEnergyStore.getState().connection.mode).toBe('simulation');
 
@@ -129,7 +129,7 @@ describe('Ajustes', () => {
     expect(useEnergyStore.getState().hasDemoData).toBe(false);
   });
 
-  it('valida la IP del ESP32 antes de guardarla', async () => {
+  it('valida la IP del sensor antes de guardarla', async () => {
     useEnergyStore.setState({ hasDemoData: false, connection: { mode: 'hardware', host: '192.168.4.1', pollingIntervalMs: 2000 } });
     await renderWithProviders(<SettingsScreen />);
     await fireEvent.changeText(screen.getByTestId('host-input'), '192.168.4');

@@ -1,6 +1,7 @@
 import { BudgetHeroCard } from '@/components/dashboard/BudgetHeroCard';
-import { LivePowerCard } from '@/components/dashboard/LivePowerCard';
-import { TelemetryGrid } from '@/components/dashboard/TelemetryGrid';
+import { CollapsibleTechnicalDetails } from '@/components/dashboard/CollapsibleTechnicalDetails';
+import { EnergySavingCard } from '@/components/dashboard/EnergySavingCard';
+import { MeterActionCard } from '@/components/dashboard/MeterActionCard';
 import { WeeklyConsumptionCard } from '@/components/dashboard/WeeklyConsumptionCard';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
@@ -14,6 +15,7 @@ export default function DashboardScreen() {
   const liveReading = useEnergyStore((s) => s.liveReading);
   const powerHistory = useEnergyStore((s) => s.powerHistory);
   const meterKWh = useEnergyStore((s) => s.ledger.meterKWh);
+  const lastCalibrationTime = useEnergyStore((s) => s.captures[0]?.timestamp ?? null);
   const budget = useEnergyStore((s) => s.budget);
   const alerts = useEnergyStore((s) => s.alerts);
   const status = useEnergyStore((s) => s.status);
@@ -27,7 +29,7 @@ export default function DashboardScreen() {
   return (
     <Screen
       testID="dashboard-screen"
-      header={<ScreenHeader showBrand title="AhorraTech" subtitle="Tu energía hoy" trailing={<ConnectionPill />} />}
+      header={<ScreenHeader showBrand title="AhorraTech" subtitle="Control de tu factura" trailing={<ConnectionPill />} />}
     >
       {mode === 'hardware' && status.errorMessage ? (
         <Banner tone="warning" title="Sin conexión con el medidor" message={status.errorMessage} />
@@ -46,20 +48,24 @@ export default function DashboardScreen() {
 
       <BudgetHeroCard projection={projection} monthlyBudgetBs={budget.monthlyBudgetBs} />
 
-      <LivePowerCard
-        history={powerHistory}
-        currentPowerW={liveReading?.power ?? null}
-        maxPowerW={budget.maxPowerThresholdW}
-      />
-
-      <TelemetryGrid
-        reading={liveReading}
+      <MeterActionCard
         meterKWh={meterKWh}
-        cycleKWh={projection.cycleEnergyKWh}
-        lastSyncTime={status.lastSyncTime}
+        lastCalibrationTime={lastCalibrationTime}
+        ratePerKWh={budget.ratePerKWh}
       />
 
       <WeeklyConsumptionCard series={weekly} dailyTargetBs={dailyTargetBs} />
+
+      <EnergySavingCard />
+
+      <CollapsibleTechnicalDetails
+        reading={liveReading}
+        powerHistory={powerHistory}
+        meterKWh={meterKWh}
+        cycleKWh={projection.cycleEnergyKWh}
+        maxPowerW={budget.maxPowerThresholdW}
+        lastSyncTime={status.lastSyncTime}
+      />
     </Screen>
   );
 }

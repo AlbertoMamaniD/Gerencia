@@ -96,7 +96,11 @@ export function migratePersistedState(persisted: unknown, version: number, now: 
 
   // v3 tiene el mismo formato; v4 solo agrega campos con valores por defecto.
   if (version >= 3) {
-    return { ...base, ...(old as Partial<PersistedState>) };
+    const raw = old as Partial<PersistedState>;
+    return {
+      ...base,
+      ...raw,
+    };
   }
 
   const oldBudget = (old.budgetConfig ?? {}) as Record<string, unknown>;

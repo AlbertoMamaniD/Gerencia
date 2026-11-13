@@ -79,7 +79,7 @@ describe('validateHost', () => {
   );
 
   it.each([
-    ['', 'Ingresa la dirección IP del ESP32.'],
+    ['', 'Ingresa la dirección IP del sensor.'],
     ['192.168.4', 'La IP debe tener 4 números separados por puntos (ej. 192.168.4.1).'],
     ['192.168.4.300', 'Cada número de la IP debe estar entre 0 y 255.'],
     ['10.0.0.5:99999', 'El puerto debe estar entre 1 y 65535.'],
