@@ -67,6 +67,12 @@ export function CollapsibleTechnicalDetails({
 
       {expanded ? (
         <View style={styles.expandedContent}>
+          <View style={styles.technicalNotice}>
+            <Icon name="information-outline" size={18} color={colors.primary} />
+            <AppText variant="caption" tone="secondary" style={styles.technicalNoticeText}>
+              Telemetría en tiempo real del sensor PZEM-004T. Monitorea la calidad de la red de SETAR y evita sobrecargas.
+            </AppText>
+          </View>
           <LivePowerCard
             history={powerHistory}
             currentPowerW={reading?.power ?? null}
@@ -84,7 +90,7 @@ export function CollapsibleTechnicalDetails({
   );
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   container: {
     gap: spacing.md,
   },
@@ -109,6 +115,17 @@ const useStyles = makeStyles(() => ({
     gap: spacing.sm,
   },
   expandedContent: {
-    gap: spacing.lg,
+    gap: spacing.md,
+  },
+  technicalNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: withAlpha(colors.primary, 0.08),
+    padding: spacing.md,
+    borderRadius: 12,
+  },
+  technicalNoticeText: {
+    flex: 1,
   },
 }));
