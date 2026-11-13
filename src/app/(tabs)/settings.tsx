@@ -4,16 +4,29 @@ import Constants from 'expo-constants';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
-import { AppText, Banner, Button, Card, SectionHeader, SegmentedControl, TextField } from '@/components/ui';
+import { AppText, Banner, Button, Card, Chip, Icon, SectionHeader, SegmentedControl, TextField } from '@/components/ui';
 import { ConnectionMode } from '@/domain/types';
 import { validateCycleStartDay, validateHost, validateRate } from '@/domain/validation';
 import { notify, vibrate } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
 import { formatRelativeTime, toInputValue } from '@/utils/formatters';
-import { makeStyles, spacing, ThemePreference } from '@/theme';
+import { makeStyles, spacing, ThemePreference, useTheme, withAlpha } from '@/theme';
+
+const TARIFF_PRESETS = [
+  { rate: 0.85, label: 'Casa / Hogar (Bs 0,85)' },
+  { rate: 0.65, label: 'Tarifa Dignidad (Bs 0,65)' },
+  { rate: 1.05, label: 'Tienda / Negocio (Bs 1,05)' },
+];
+
+const CYCLE_PRESETS = [
+  { day: 1, label: 'Día 1' },
+  { day: 15, label: 'Día 15' },
+  { day: 20, label: 'Día 20' },
+];
 
 export default function SettingsScreen() {
   const styles = useStyles();
+  const { colors } = useTheme();
 
   const connection = useEnergyStore((s) => s.connection);
   const status = useEnergyStore((s) => s.status);
@@ -68,11 +81,12 @@ export default function SettingsScreen() {
     setShowTariffErrors(true);
     if (!rateResult.ok || !dayResult.ok) return;
     updateBudget({ ratePerKWh: rateResult.value, billingCycleStartDay: dayResult.value });
+    setShowTariffErrors(false);
     flash('Tarifa y ciclo guardados.');
   };
 
   const confirmResetCycle = () => {
-    Alert.alert('Reiniciar ciclo', 'El consumo del ciclo volverá a cero. El historial diario se conserva.', [
+    Alert.alert('Reiniciar ciclo de facturación', '¿Quieres reiniciar el contador de consumo a cero para empezar un nuevo ciclo?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Reiniciar',
@@ -95,7 +109,7 @@ export default function SettingsScreen() {
   return (
     <Screen
       testID="settings-screen"
-      header={<ScreenHeader title="Ajustes" subtitle="Medidor, tarifa y apariencia" trailing={<ConnectionPill />} />}
+      header={<ScreenHeader title="Ajustes" subtitle="Tarifa de SETAR y preferencias" trailing={<ConnectionPill />} />}
     >
       {message ? <Banner tone="success" title={message} onDismiss={() => setMessage(null)} /> : null}
 
@@ -163,7 +177,41 @@ export default function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <SectionHeader title="Tarifa y ciclo" description="Según tu factura de luz." />
+        <SectionHeader
+          title="Tarifa de SETAR y fecha de cobro"
+          description="Ajusta el precio por kWh y el día que inicia tu ciclo de facturación."
+        />
+
+        <View style={styles.group}>
+          <AppText variant="caption" tone="muted">
+            Tarifas habituales de SETAR en Tarija
+          </AppText>
+          <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Tarifas sugeridas de SETAR">
+            {TARIFF_PRESETS.map((preset) => (
+              <Chip
+                key={preset.rate}
+                label={preset.label}
+                accessibilityLabel={preset.label}
+                selected={rateResult.ok && rateResult.value === preset.rate}
+                onPress={() => {
+                  setRateText(toInputValue(preset.rate));
+                  setShowTariffErrors(false);
+                }}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.helpBox}>
+          <Icon name="information-outline" size={20} color={colors.primary} />
+          <View style={styles.helpBoxText}>
+            <AppText variant="bodyStrong">¿Cómo saber cuánto te cobra SETAR?</AppText>
+            <AppText variant="small" tone="secondary">
+              En Tarija, el 90% de las casas pagan la tarifa domiciliaria estándar de Bs 0,85 por kWh. Si tu consumo es bajo (menos de 70 kWh), SETAR aplica la Tarifa Dignidad (Bs 0,65). Si tienes dudas, deja seleccionado Casa / Hogar (Bs 0,85).
+            </AppText>
+          </View>
+        </View>
+
         <TextField
           label="Tarifa por kWh"
           prefix="Bs"
@@ -175,6 +223,27 @@ export default function SettingsScreen() {
           error={showTariffErrors && !rateResult.ok ? rateResult.error : null}
           testID="rate-input"
         />
+
+        <View style={styles.group}>
+          <AppText variant="caption" tone="muted">
+            Día que inicia tu factura (entre 1 y 28)
+          </AppText>
+          <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Días sugeridos de ciclo">
+            {CYCLE_PRESETS.map((preset) => (
+              <Chip
+                key={preset.day}
+                label={preset.label}
+                accessibilityLabel={`Día ${preset.day}`}
+                selected={dayResult.ok && dayResult.value === preset.day}
+                onPress={() => {
+                  setDayText(String(preset.day));
+                  setShowTariffErrors(false);
+                }}
+              />
+            ))}
+          </View>
+        </View>
+
         <TextField
           label="Día de inicio del ciclo"
           suffix="de cada mes"
@@ -184,9 +253,10 @@ export default function SettingsScreen() {
           value={dayText}
           onChangeText={setDayText}
           error={showTariffErrors && !dayResult.ok ? dayResult.error : null}
-          helperText="Entre 1 y 28."
+          helperText="Día del mes (1 al 28) en que se emite o renueva tu factura."
           testID="cycle-day-input"
         />
+
         <Button
           label="Guardar tarifa"
           variant="secondary"
@@ -215,12 +285,31 @@ export default function SettingsScreen() {
   );
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   card: {
     gap: spacing.lg,
   },
   group: {
+    gap: spacing.sm,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  helpBox: {
+    flexDirection: 'row',
     gap: spacing.md,
+    alignItems: 'flex-start',
+    backgroundColor: withAlpha(colors.primary, 0.08),
+    borderWidth: 1,
+    borderColor: withAlpha(colors.primary, 0.2),
+    padding: spacing.md,
+    borderRadius: 12,
+  },
+  helpBoxText: {
+    flex: 1,
+    gap: spacing.xs,
   },
   statusRow: {
     flexDirection: 'row',
