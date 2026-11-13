@@ -3,19 +3,25 @@ import { View } from 'react-native';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
-import { AppText, Banner, Button, Card, Chip, SectionHeader, TextField } from '@/components/ui';
-import { budgetBsToKWh, wattsToAmps } from '@/domain/billing';
+import { AppText, Badge, Banner, Button, Card, Chip, Icon, SectionHeader, TextField } from '@/components/ui';
+import { budgetBsToKWh, roundTo } from '@/domain/billing';
 import { validateBudget, validateMaxPower } from '@/domain/validation';
 import { vibrate } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
-import { formatCurrency, formatEnergy, formatNumber, toInputValue } from '@/utils/formatters';
-import { makeStyles, spacing } from '@/theme';
+import { formatCurrency, formatNumber, toInputValue } from '@/utils/formatters';
+import { makeStyles, spacing, useTheme, withAlpha } from '@/theme';
 
 const BUDGET_PRESETS = [100, 150, 200, 300, 500];
 const WARNING_OPTIONS = [70, 75, 80, 85, 90];
+const POWER_PRESETS = [
+  { watts: 2200, label: 'Básico (2.200 W)' },
+  { watts: 3500, label: 'Estándar (3.500 W)' },
+  { watts: 5500, label: 'Intensivo (5.500 W)' },
+];
 
 export default function LimitsScreen() {
   const styles = useStyles();
+  const { colors } = useTheme();
   const budget = useEnergyStore((s) => s.budget);
   const updateBudget = useEnergyStore((s) => s.updateBudget);
 
@@ -35,6 +41,7 @@ export default function LimitsScreen() {
   const powerResult = validateMaxPower(powerText);
   const budgetValue = budgetResult.ok ? budgetResult.value : null;
   const powerValue = powerResult.ok ? powerResult.value : null;
+  const isDignidadTarget = budgetValue !== null && budgetBsToKWh(budgetValue, budget.ratePerKWh) <= 70;
 
   const isDirty =
     budgetValue !== budget.monthlyBudgetBs ||
@@ -56,7 +63,7 @@ export default function LimitsScreen() {
   return (
     <Screen
       testID="limits-screen"
-      header={<ScreenHeader title="Presupuesto" subtitle="Límites y alertas" trailing={<ConnectionPill />} />}
+      header={<ScreenHeader title="Presupuesto" subtitle="Control de gasto y alertas" trailing={<ConnectionPill />} />}
       footer={
         <Button
           label={isDirty ? 'Guardar cambios' : 'Sin cambios'}
@@ -67,10 +74,13 @@ export default function LimitsScreen() {
         />
       }
     >
-      {saved ? <Banner tone="success" title="Cambios guardados" message="Tus límites ya están activos." /> : null}
+      {saved ? <Banner tone="success" title="Cambios guardados" message="Tu meta y alertas ya están activas." /> : null}
 
       <Card style={styles.card}>
-        <SectionHeader title="Presupuesto mensual" description="Cuánto quieres gastar como máximo en cada ciclo." />
+        <SectionHeader
+          title="Meta mensual de tu factura"
+          description="¿Cuánto quieres pagar como máximo en tu próxima factura de SETAR?"
+        />
         <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Montos sugeridos">
           {BUDGET_PRESETS.map((value) => (
             <Chip
@@ -93,34 +103,77 @@ export default function LimitsScreen() {
           error={showErrors && !budgetResult.ok ? budgetResult.error : null}
           helperText={
             budgetValue !== null
-              ? `Equivale a ${formatEnergy(budgetBsToKWh(budgetValue, budget.ratePerKWh), 0)} a ${formatNumber(budget.ratePerKWh)} Bs/kWh.`
+              ? `Meta diaria: ~Bs ${formatNumber(roundTo(budgetValue / 30, 1))} al día para no pasarte.`
               : undefined
           }
           testID="budget-input"
         />
+
+        {budgetValue !== null ? (
+          <View style={[styles.infoBanner, isDignidadTarget ? styles.infoBannerSuccess : styles.infoBannerNeutral]}>
+            <Icon
+              name={isDignidadTarget ? 'star-circle-outline' : 'lightbulb-outline'}
+              size={22}
+              color={isDignidadTarget ? colors.success : colors.primary}
+            />
+            <View style={styles.infoBannerText}>
+              <AppText variant="bodyStrong">
+                {isDignidadTarget
+                  ? '¡Excelente meta! Accedes a Tarifa Dignidad'
+                  : `Aviso preventivo al alcanzar ${formatCurrency((budgetValue * warningPct) / 100)}`}
+              </AppText>
+              <AppText variant="small" tone="secondary">
+                {isDignidadTarget
+                  ? 'Al mantenerte debajo de 70 kWh (~Bs 59), SETAR te descuenta el 25% de tu factura.'
+                  : `Te avisaremos al celular al llegar al ${warningPct}% para que cuides la luz y no te pases.`}
+              </AppText>
+            </View>
+          </View>
+        ) : null}
       </Card>
 
       <Card style={styles.card}>
-        <SectionHeader title="Aviso anticipado" description="Te avisamos cuando llegues a este porcentaje del presupuesto." />
+        <SectionHeader
+          title="Alerta antes de pasarte"
+          description="¿A qué porcentaje de tu presupuesto quieres recibir la notificación de advertencia?"
+        />
         <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Porcentaje para el aviso">
           {WARNING_OPTIONS.map((pct) => (
-            <Chip key={pct} label={`${pct}%`} selected={warningPct === pct} onPress={() => setWarningPct(pct)} />
+            <Chip
+              key={pct}
+              label={pct === 80 ? '80% (Recomendado)' : `${pct}%`}
+              accessibilityLabel={`${pct}%`}
+              selected={warningPct === pct}
+              onPress={() => setWarningPct(pct)}
+            />
           ))}
         </View>
         <AppText variant="small" tone="secondary">
           {budgetValue !== null
-            ? `Recibirás el aviso al llegar a ${formatCurrency((budgetValue * warningPct) / 100)}.`
-            : 'Ingresa un presupuesto válido para ver el monto del aviso.'}
+            ? `Te avisaremos automáticamente al alcanzar ${formatCurrency((budgetValue * warningPct) / 100)} gastados en el mes.`
+            : 'Ingresa un presupuesto válido para ver el momento del aviso.'}
         </AppText>
       </Card>
 
       <Card style={styles.card}>
         <SectionHeader
-          title="Protección de sobrecarga"
-          description="Alerta cuando la potencia supere este valor, antes de que salte la térmica."
+          title="Protección contra cortes de luz"
+          description="Te avisa si enciendes demasiados aparatos a la vez, antes de que salte la palanca eléctrica."
+          trailing={<Badge label="Opcional" tone="neutral" />}
         />
+        <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Perfiles de potencia sugeridos">
+          {POWER_PRESETS.map((preset) => (
+            <Chip
+              key={preset.watts}
+              label={preset.label}
+              accessibilityLabel={preset.label}
+              selected={powerValue === preset.watts}
+              onPress={() => setPowerText(String(preset.watts))}
+            />
+          ))}
+        </View>
         <TextField
-          label="Potencia máxima"
+          label="Límite en Watts"
           suffix="W"
           keyboardType="number-pad"
           inputMode="numeric"
@@ -128,7 +181,15 @@ export default function LimitsScreen() {
           onChangeText={setPowerText}
           onBlur={() => setShowErrors(true)}
           error={showErrors && !powerResult.ok ? powerResult.error : null}
-          helperText={powerValue !== null ? `≈ ${formatNumber(wattsToAmps(powerValue), 1)} A a 220 V.` : undefined}
+          helperText={
+            powerValue !== null
+              ? powerValue <= 2500
+                ? 'Ideal para departamentos pequeños o consumo básico (luces, TV y heladera).'
+                : powerValue <= 4000
+                  ? 'Recomendado para casas con ducha eléctrica o aire acondicionado.'
+                  : 'Para casas grandes, múltiples aires acondicionados o talleres.'
+              : undefined
+          }
           testID="power-input"
         />
       </Card>
@@ -136,7 +197,7 @@ export default function LimitsScreen() {
   );
 }
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles(({ colors }) => ({
   card: {
     gap: spacing.lg,
   },
@@ -144,5 +205,26 @@ const useStyles = makeStyles(() => ({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: 12,
+  },
+  infoBannerNeutral: {
+    backgroundColor: withAlpha(colors.primary, 0.08),
+    borderWidth: 1,
+    borderColor: withAlpha(colors.primary, 0.2),
+  },
+  infoBannerSuccess: {
+    backgroundColor: withAlpha(colors.success, 0.08),
+    borderWidth: 1,
+    borderColor: withAlpha(colors.success, 0.2),
+  },
+  infoBannerText: {
+    flex: 1,
+    gap: spacing.xs,
   },
 }));
