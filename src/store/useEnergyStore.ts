@@ -37,6 +37,11 @@ import {
   STORE_VERSION,
 } from './migrations';
 import { flushStorage, throttledStorage } from './throttledStorage';
+import {
+  CloudSyncResult,
+  fetchHouseholdSettingsFromCloud,
+  syncHouseholdSettingsToCloud,
+} from '@/services/cloud/cloudSync';
 
 export const POWER_HISTORY_SIZE = 30;
 /** Sin lecturas nuevas por más de este tiempo, la potencia mostrada deja de considerarse vigente. */
@@ -65,6 +70,7 @@ interface Actions {
   resetCycle: () => void;
   refreshAlerts: (now?: number) => void;
   markAlertNotified: (type: AlertType, at: number) => void;
+  syncCloudSettings: () => Promise<CloudSyncResult>;
 }
 
 export type EnergyState = PersistedState & RuntimeState & Actions;
@@ -142,6 +148,16 @@ export const useEnergyStore = create<EnergyState>()(
         get().refreshAlerts();
       };
 
+      const pushSettings = (budget: BudgetConfig, lastKWh: number) => {
+        void syncHouseholdSettingsToCloud({
+          monthlyBudgetBs: budget.monthlyBudgetBs,
+          ratePerKWh: budget.ratePerKWh,
+          billingCycleStartDay: budget.billingCycleStartDay,
+          maxPowerThresholdW: budget.maxPowerThresholdW,
+          lastMeterKWh: lastKWh,
+        });
+      };
+
       return {
         ...createInitialPersistedState(),
         ...initialRuntimeState,
@@ -187,6 +203,7 @@ export const useEnergyStore = create<EnergyState>()(
               ? toLocalDateKey(getBillingCycle(new Date(), budget.billingCycleStartDay).start)
               : state.cycleKey;
           setAndRefresh({ budget, cycleKey });
+          pushSettings(budget, getCycleEnergyKWh(get().ledger));
         },
 
         updateConnection: (changes) => {
@@ -213,6 +230,7 @@ export const useEnergyStore = create<EnergyState>()(
 
         calibrateMeter: (meterReadingKWh) => {
           setAndRefresh({ ledger: calibrateLedger(get().ledger, meterReadingKWh) });
+          pushSettings(get().budget, meterReadingKWh);
         },
 
         addCapture: (capture) => {
@@ -241,6 +259,17 @@ export const useEnergyStore = create<EnergyState>()(
           const state = get();
           commit({ alertNotifications: { ...state.alertNotifications, [type]: { at, cycleKey: state.cycleKey } } });
         },
+
+        syncCloudSettings: async () => {
+          const state = get();
+          return syncHouseholdSettingsToCloud({
+            monthlyBudgetBs: state.budget.monthlyBudgetBs,
+            ratePerKWh: state.budget.ratePerKWh,
+            billingCycleStartDay: state.budget.billingCycleStartDay,
+            maxPowerThresholdW: state.budget.maxPowerThresholdW,
+            lastMeterKWh: getCycleEnergyKWh(state.ledger),
+          });
+        },
       };
     },
     {
@@ -262,6 +291,16 @@ export const useEnergyStore = create<EnergyState>()(
       onRehydrateStorage: () => () => {
         useEnergyStore.setState({ hasHydrated: true });
         useEnergyStore.getState().refreshAlerts();
+        void fetchHouseholdSettingsFromCloud().then((cloud) => {
+          if (!cloud) return;
+          const current = useEnergyStore.getState();
+          current.updateBudget({
+            monthlyBudgetBs: cloud.monthlyBudgetBs,
+            ratePerKWh: cloud.ratePerKWh,
+            billingCycleStartDay: cloud.billingCycleStartDay,
+            maxPowerThresholdW: cloud.maxPowerThresholdW,
+          });
+        });
       },
     }
   )
