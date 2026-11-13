@@ -1,4 +1,3 @@
-import { ApplianceAuditQuickCard } from '@/components/dashboard/ApplianceAuditQuickCard';
 import { BudgetHeroCard } from '@/components/dashboard/BudgetHeroCard';
 import { CollapsibleTechnicalDetails } from '@/components/dashboard/CollapsibleTechnicalDetails';
 import { EnergySavingCard } from '@/components/dashboard/EnergySavingCard';
@@ -54,8 +53,6 @@ export default function DashboardScreen() {
         cycleEnergyKWh={projection.cycleEnergyKWh}
         ratePerKWh={budget.ratePerKWh}
       />
-
-      <ApplianceAuditQuickCard />
 
       <MeterActionCard
         meterKWh={meterKWh}

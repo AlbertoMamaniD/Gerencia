@@ -142,3 +142,4 @@ export function calculateDetailedSetarBill(options: BillSimulationOptions): Deta
     bracket,
   };
 }
+

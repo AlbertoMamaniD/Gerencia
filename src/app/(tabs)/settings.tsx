@@ -4,18 +4,16 @@ import Constants from 'expo-constants';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
-import { AppText, Badge, Banner, Button, Card, ListRow, SectionHeader, SegmentedControl, TextField } from '@/components/ui';
-import { getSupabaseHost, isOcrConfigured, isSupabaseConfigured } from '@/config/env';
+import { AppText, Banner, Button, Card, SectionHeader, SegmentedControl, TextField } from '@/components/ui';
 import { ConnectionMode } from '@/domain/types';
 import { validateCycleStartDay, validateHost, validateRate } from '@/domain/validation';
 import { notify, vibrate } from '@/services/notifications';
 import { useEnergyStore } from '@/store/useEnergyStore';
 import { formatRelativeTime, toInputValue } from '@/utils/formatters';
-import { makeStyles, spacing, ThemePreference, useTheme } from '@/theme';
+import { makeStyles, spacing, ThemePreference } from '@/theme';
 
 export default function SettingsScreen() {
   const styles = useStyles();
-  const { colors } = useTheme();
 
   const connection = useEnergyStore((s) => s.connection);
   const status = useEnergyStore((s) => s.status);
@@ -92,8 +90,6 @@ export default function SettingsScreen() {
     setMessage(sent ? 'Notificación enviada.' : 'No se pudo enviar. Revisa el permiso de notificaciones.');
   };
 
-  const supabaseOk = isSupabaseConfigured();
-  const ocrOk = isOcrConfigured();
   const version = Constants.expoConfig?.version ?? '—';
 
   return (
@@ -204,29 +200,6 @@ export default function SettingsScreen() {
           }
           testID="save-tariff"
         />
-      </Card>
-
-      <Card style={styles.card}>
-        <SectionHeader title="Servicios en la nube" />
-        <View>
-          <ListRow
-            divider
-            icon="database-outline"
-            iconColor={supabaseOk ? colors.success : colors.textMuted}
-            iconBackground={supabaseOk ? colors.successSoft : colors.surfaceMuted}
-            title="Respaldo de fotos"
-            subtitle={supabaseOk ? (getSupabaseHost() ?? 'Supabase') : 'No configurado'}
-            trailing={<Badge label={supabaseOk ? 'Activo' : 'Inactivo'} tone={supabaseOk ? 'success' : 'neutral'} />}
-          />
-          <ListRow
-            icon="text-recognition"
-            iconColor={ocrOk ? colors.success : colors.textMuted}
-            iconBackground={ocrOk ? colors.successSoft : colors.surfaceMuted}
-            title="Lectura automática (OCR)"
-            subtitle={ocrOk ? 'En el servidor (Gemini)' : 'No configurado: lectura manual'}
-            trailing={<Badge label={ocrOk ? 'Activo' : 'Inactivo'} tone={ocrOk ? 'success' : 'neutral'} />}
-          />
-        </View>
       </Card>
 
       <Card style={styles.card}>
