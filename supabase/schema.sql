@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS public.daily_energy_aggregates (
 -- 11. AUDITORÍA Y CALIBRACIÓN CON FOTO (OCR Multimodal)
 CREATE TABLE IF NOT EXISTS public.meter_scans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id UUID DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
     unit_id UUID REFERENCES public.meter_units(id) ON DELETE CASCADE,
     performed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     photo_url TEXT NOT NULL,                     -- URL en Supabase Storage
@@ -158,6 +159,17 @@ CREATE TABLE IF NOT EXISTS public.meter_scans (
     ocr_confidence NUMERIC(5, 2) DEFAULT 98.0,
     status VARCHAR(20) DEFAULT 'calibrated' CHECK (status IN ('pending', 'calibrated', 'rejected')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 11b. CONFIGURACIÓN DEL HOGAR Y PRESUPUESTO (Cloud Sync por Usuario)
+CREATE TABLE IF NOT EXISTS public.household_settings (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    monthly_budget_bs NUMERIC(10, 2) NOT NULL DEFAULT 180.00,
+    cost_per_kwh NUMERIC(10, 4) NOT NULL DEFAULT 0.8500,
+    billing_cycle_start_day INT NOT NULL DEFAULT 1 CHECK (billing_cycle_start_day BETWEEN 1 AND 28),
+    cut_protection_watts INT NOT NULL DEFAULT 3500,
+    last_meter_kwh NUMERIC(10, 2) DEFAULT 0.00,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 12. RECIBOS MENSUALES DE COBRO (EN BOLIVIANOS)
@@ -179,6 +191,7 @@ CREATE TABLE IF NOT EXISTS public.monthly_bills (
 CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON public.telemetry_readings (device_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_device_date ON public.daily_energy_aggregates (device_id, reading_date DESC);
 CREATE INDEX IF NOT EXISTS idx_scans_unit ON public.meter_scans (unit_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scans_owner ON public.meter_scans (owner_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_bills_unit ON public.monthly_bills (unit_id, billing_period);
 CREATE INDEX IF NOT EXISTS idx_devices_unit ON public.devices (unit_id);
 
@@ -191,6 +204,45 @@ ALTER TABLE public.telemetry_readings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_energy_aggregates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meter_scans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.monthly_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.household_settings ENABLE ROW LEVEL SECURITY;
+
+-- 14b. POLÍTICAS DE CONFIGURACIÓN DEL HOGAR (household_settings)
+DROP POLICY IF EXISTS "Users can insert their own settings" ON public.household_settings;
+DROP POLICY IF EXISTS "Users can update their own settings" ON public.household_settings;
+DROP POLICY IF EXISTS "Users can read their own settings" ON public.household_settings;
+
+CREATE POLICY "Users can insert their own settings" ON public.household_settings
+    FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can update their own settings" ON public.household_settings
+    FOR UPDATE TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can read their own settings" ON public.household_settings
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid());
+
+GRANT ALL ON public.household_settings TO authenticated;
+REVOKE ALL ON public.household_settings FROM anon;
+
+-- 14c. POLÍTICAS DE AUDITORÍA Y LECTURA CON FOTO (meter_scans)
+DROP POLICY IF EXISTS "Owner inserts meter_scans" ON public.meter_scans;
+DROP POLICY IF EXISTS "Owner reads meter_scans" ON public.meter_scans;
+
+CREATE POLICY "Owner inserts meter_scans" ON public.meter_scans
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        owner_id = auth.uid()
+        AND photo_url LIKE auth.uid()::text || '/%'
+    );
+
+CREATE POLICY "Owner reads meter_scans" ON public.meter_scans
+    FOR SELECT TO authenticated
+    USING (owner_id = auth.uid());
+
+REVOKE ALL ON public.meter_scans FROM anon;
 
 -- Propietario lee todo lo de su organización
 CREATE POLICY "Landlord access properties" ON public.properties
@@ -240,9 +292,68 @@ CREATE POLICY "Access daily aggregates" ON public.daily_energy_aggregates
         )
     );
 
--- Permisos de la App Móvil (calibraciones y fotos del medidor):
--- se definen en supabase/migrations/20261031000000_security_hardening.sql
--- (cada usuario solo accede a sus propias filas y fotos; bucket privado).
+-- 14d. STORAGE: BUCKET PRIVADO PARA FOTOS DE MEDIDORES (meter-photos)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('meter-photos', 'meter-photos', false, 5242880, ARRAY['image/jpeg'])
+ON CONFLICT (id) DO UPDATE
+    SET public = false,
+        file_size_limit = 5242880,
+        allowed_mime_types = ARRAY['image/jpeg'];
+
+DROP POLICY IF EXISTS "Owner uploads meter-photos" ON storage.objects;
+DROP POLICY IF EXISTS "Owner reads meter-photos" ON storage.objects;
+
+CREATE POLICY "Owner uploads meter-photos" ON storage.objects
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        bucket_id = 'meter-photos'
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+CREATE POLICY "Owner reads meter-photos" ON storage.objects
+    FOR SELECT TO authenticated
+    USING (
+        bucket_id = 'meter-photos'
+        AND (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+-- 14e. CONTROL DE CUOTA DIARIA OCR POR USUARIO
+CREATE TABLE IF NOT EXISTS public.ocr_usage (
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    request_count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, usage_date)
+);
+
+ALTER TABLE public.ocr_usage ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ocr_usage FROM anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.consume_ocr_quota(p_daily_limit INTEGER DEFAULT 30)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_user UUID := auth.uid();
+    v_count INTEGER;
+BEGIN
+    IF v_user IS NULL THEN
+        RETURN FALSE;
+    END IF;
+
+    INSERT INTO public.ocr_usage (user_id, usage_date, request_count)
+    VALUES (v_user, CURRENT_DATE, 1)
+    ON CONFLICT (user_id, usage_date)
+    DO UPDATE SET request_count = public.ocr_usage.request_count + 1
+    RETURNING request_count INTO v_count;
+
+    RETURN v_count <= LEAST(GREATEST(p_daily_limit, 1), 200);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.consume_ocr_quota(INTEGER) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.consume_ocr_quota(INTEGER) TO authenticated;
 
 -- 15. FUNCIÓN RPC PARA INGESTIÓN IOT DESDE ESP32 (Autenticación nativa por API Key)
 CREATE OR REPLACE FUNCTION public.ingest_esp32_telemetry(

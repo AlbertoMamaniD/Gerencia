@@ -98,11 +98,12 @@ npx eas-cli@latest build -p android --profile preview
 El backend utiliza Supabase PostgreSQL y Supabase Storage:
 
 ### Estructura disponible:
-- **Bucket Storage:** `meter-photos` (Bucket público para almacenar las fotografías de las calibraciones de los medidores).
+- **Bucket Storage:** `meter-photos` (Bucket privado con RLS para almacenar las fotografías de las calibraciones de los medidores).
+- **Tabla de Configuración del Hogar (Cloud Sync):** `public.household_settings` (Guarda automáticamente el presupuesto en Bs, tarifa por kWh, día de cobro y potencia de corte para restaurar en caso de cambio o formateo de celular).
 - **Tabla de Auditoría:** `public.meter_scans` (Registra la fecha, foto URL, kWh leídos por IA, kWh del hardware y diferencia).
-- **Tablas de Tarifas y Telemetría:** `tariff_plans` (CRE, DELAPAZ, ELFEC), `telemetry_readings`, `daily_energy_aggregates`.
+- **Tablas de Tarifas y Telemetría:** `tariff_plans` (SETAR, CRE, DELAPAZ, ELFEC), `telemetry_readings`, `daily_energy_aggregates`.
 
-Si necesitas reiniciar o verificar el esquema SQL completo, el archivo maestro se encuentra en [`supabase/schema.sql`](file:///c:/GERENCIA/supabase/schema.sql).
+Si necesitas reiniciar o verificar el esquema SQL completo, el archivo maestro se encuentra en [`supabase/schema.sql`](file:///c:/GERENCIA/supabase/schema.sql). Incluye todas las tablas, buckets de Storage y políticas RLS seguras.
 
 ---
 
