@@ -28,12 +28,6 @@ const TARIFF_PRESETS = [
   { rate: 1.05, label: 'Negocio (Bs 1,05)', fullLabel: 'Tienda o comercio' },
 ];
 
-const CYCLE_PRESETS = [
-  { day: 1, label: 'Día 1' },
-  { day: 15, label: 'Día 15' },
-  { day: 20, label: 'Día 20' },
-];
-
 export default function SettingsScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -245,23 +239,6 @@ export default function SettingsScreen() {
         <View style={styles.divider} />
 
         <View style={styles.sectionBlock}>
-          <AppText variant="caption" tone="muted">
-            Día que inicia tu factura (entre 1 y 28)
-          </AppText>
-          <View style={styles.chipsRow} accessibilityRole="radiogroup" accessibilityLabel="Días sugeridos de ciclo">
-            {CYCLE_PRESETS.map((preset) => (
-              <Chip
-                key={preset.day}
-                label={preset.label}
-                accessibilityLabel={`Día ${preset.day}`}
-                selected={dayResult.ok && dayResult.value === preset.day}
-                onPress={() => {
-                  setDayText(String(preset.day));
-                  setShowTariffErrors(false);
-                }}
-              />
-            ))}
-          </View>
           <TextField
             label="Día de inicio del ciclo"
             suffix="de cada mes"
@@ -271,7 +248,7 @@ export default function SettingsScreen() {
             value={dayText}
             onChangeText={setDayText}
             error={showTariffErrors && !dayResult.ok ? dayResult.error : null}
-            helperText="Día del mes (1 al 28) en que se emite o renueva tu factura."
+            helperText="La mayoría de hogares usa el día 1. Puedes ajustarlo según tu aviso de SETAR (1 al 28)."
             testID="cycle-day-input"
           />
         </View>
