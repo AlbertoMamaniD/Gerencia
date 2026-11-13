@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { alertsEqual, evaluateAlertConditions, reconcileAlerts } from '@/domain/alerts';
+import { ApplianceItem, DEFAULT_TARIJA_APPLIANCES } from '@/domain/appliances';
 import { calculateFinancialProjection, getBillingCycle } from '@/domain/billing';
 import {
   applySensorReading,
@@ -65,6 +66,10 @@ interface Actions {
   resetCycle: () => void;
   refreshAlerts: (now?: number) => void;
   markAlertNotified: (type: AlertType, at: number) => void;
+  updateAppliance: (id: string, changes: Partial<ApplianceItem>) => void;
+  addAppliance: (appliance: ApplianceItem) => void;
+  removeAppliance: (id: string) => void;
+  resetAppliances: () => void;
 }
 
 export type EnergyState = PersistedState & RuntimeState & Actions;
@@ -241,6 +246,23 @@ export const useEnergyStore = create<EnergyState>()(
           const state = get();
           commit({ alertNotifications: { ...state.alertNotifications, [type]: { at, cycleKey: state.cycleKey } } });
         },
+
+        updateAppliance: (id, changes) => {
+          const appliances = get().appliances.map((a) => (a.id === id ? { ...a, ...changes } : a));
+          commit({ appliances });
+        },
+
+        addAppliance: (appliance) => {
+          commit({ appliances: [...get().appliances, appliance] });
+        },
+
+        removeAppliance: (id) => {
+          commit({ appliances: get().appliances.filter((a) => a.id !== id) });
+        },
+
+        resetAppliances: () => {
+          commit({ appliances: DEFAULT_TARIJA_APPLIANCES });
+        },
       };
     },
     {
@@ -257,6 +279,7 @@ export const useEnergyStore = create<EnergyState>()(
         cycleKey: state.cycleKey,
         dismissedAlertTypes: state.dismissedAlertTypes,
         alertNotifications: state.alertNotifications,
+        appliances: state.appliances,
       }),
       migrate: (persisted, version) => migratePersistedState(persisted, version) as unknown as EnergyState,
       onRehydrateStorage: () => () => {

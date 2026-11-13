@@ -3,6 +3,7 @@
  * para que los usuarios conserven su presupuesto, IP y calibraciones.
  */
 
+import { ApplianceItem, DEFAULT_TARIJA_APPLIANCES } from '@/domain/appliances';
 import { AlertType, BudgetConfig, ConnectionConfig, MeterCaptureRecord } from '@/domain/types';
 import { createDemoDaily, MeterLedger } from '@/domain/meter';
 import { SIMULATION_START_KWH } from '@/services/telemetry/simulator';
@@ -22,6 +23,8 @@ export interface PersistedState {
   dismissedAlertTypes: AlertType[];
   /** Última notificación enviada por tipo, para no repetirla en cada apertura. */
   alertNotifications: Partial<Record<AlertType, AlertNotificationRecord>>;
+  /** Inventario de electrodomésticos auditados del hogar. */
+  appliances: ApplianceItem[];
 }
 
 export interface AlertNotificationRecord {
@@ -62,6 +65,7 @@ export function createInitialPersistedState(now: Date = new Date()): PersistedSt
     cycleKey: null,
     dismissedAlertTypes: [],
     alertNotifications: {},
+    appliances: DEFAULT_TARIJA_APPLIANCES,
   };
 }
 
@@ -96,7 +100,12 @@ export function migratePersistedState(persisted: unknown, version: number, now: 
 
   // v3 tiene el mismo formato; v4 solo agrega campos con valores por defecto.
   if (version >= 3) {
-    return { ...base, ...(old as Partial<PersistedState>) };
+    const raw = old as Partial<PersistedState>;
+    return {
+      ...base,
+      ...raw,
+      appliances: Array.isArray(raw.appliances) && raw.appliances.length > 0 ? raw.appliances : base.appliances,
+    };
   }
 
   const oldBudget = (old.budgetConfig ?? {}) as Record<string, unknown>;

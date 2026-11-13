@@ -1,7 +1,9 @@
+import { ApplianceAuditQuickCard } from '@/components/dashboard/ApplianceAuditQuickCard';
 import { BudgetHeroCard } from '@/components/dashboard/BudgetHeroCard';
 import { CollapsibleTechnicalDetails } from '@/components/dashboard/CollapsibleTechnicalDetails';
 import { EnergySavingCard } from '@/components/dashboard/EnergySavingCard';
 import { MeterActionCard } from '@/components/dashboard/MeterActionCard';
+import { SetarTariffCard } from '@/components/dashboard/SetarTariffCard';
 import { WeeklyConsumptionCard } from '@/components/dashboard/WeeklyConsumptionCard';
 import { ConnectionPill } from '@/components/layout/ConnectionPill';
 import { Screen } from '@/components/layout/Screen';
@@ -47,6 +49,13 @@ export default function DashboardScreen() {
       ))}
 
       <BudgetHeroCard projection={projection} monthlyBudgetBs={budget.monthlyBudgetBs} />
+
+      <SetarTariffCard
+        cycleEnergyKWh={projection.cycleEnergyKWh}
+        ratePerKWh={budget.ratePerKWh}
+      />
+
+      <ApplianceAuditQuickCard />
 
       <MeterActionCard
         meterKWh={meterKWh}

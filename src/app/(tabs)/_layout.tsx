@@ -45,6 +45,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="appliances"
+        options={{
+          title: 'Artefactos',
+          tabBarIcon: tabIcon('lightning-bolt', 'lightning-bolt-outline'),
+        }}
+      />
+      <Tabs.Screen
         name="scanner"
         options={{ title: 'Escanear', tabBarIcon: tabIcon('camera', 'camera-outline') }}
       />

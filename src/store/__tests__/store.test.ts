@@ -109,6 +109,31 @@ describe('useEnergyStore', () => {
     expect(useEnergyStore.getState().captures[0].id).toBe('54');
   });
 
+  it('gestiona la lista de artefactos auditados del hogar', () => {
+    const store = useEnergyStore.getState();
+    expect(store.appliances.length).toBeGreaterThan(0);
+
+    store.addAppliance({
+      id: 'aire-nuevo',
+      name: 'Aire Acondicionado 12000 BTU',
+      category: 'clima',
+      icon: 'air-conditioner',
+      powerWatts: 1200,
+      quantity: 1,
+      hoursPerDay: 4,
+    });
+    expect(useEnergyStore.getState().appliances.some((a) => a.id === 'aire-nuevo')).toBe(true);
+
+    store.updateAppliance('aire-nuevo', { hoursPerDay: 6 });
+    expect(useEnergyStore.getState().appliances.find((a) => a.id === 'aire-nuevo')?.hoursPerDay).toBe(6);
+
+    store.removeAppliance('aire-nuevo');
+    expect(useEnergyStore.getState().appliances.some((a) => a.id === 'aire-nuevo')).toBe(false);
+
+    store.resetAppliances();
+    expect(useEnergyStore.getState().appliances.length).toBeGreaterThan(0);
+  });
+
   it('los cambios del usuario se guardan en disco de inmediato', async () => {
     useEnergyStore.getState().setThemePreference('dark');
     await flushStorage();
